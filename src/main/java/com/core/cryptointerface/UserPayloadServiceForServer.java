@@ -91,7 +91,7 @@ public class UserPayloadServiceForServer extends com.core.cryptolib.UserPayloadS
     @Override
     public HandlerResultForm handler(TransferForm transfer) throws ParseException, UnsupportedEncodingException, NoSuchAlgorithmException, IllegalBlockSizeException, InvalidKeyException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeySpecException, IOException {
 
-        return (HandlerResultForm) requestPOST(transfer.toJSON(), "/cryptolib/server/twiceEncryptedPermission", "0.0.3");
+        return (HandlerResultForm) requestPOST(transfer.toJSON(), "/cryptolib/server/handler", "0.0.3");
 
     }
 
