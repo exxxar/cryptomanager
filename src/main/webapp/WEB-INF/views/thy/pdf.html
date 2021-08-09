@@ -1,9 +1,5 @@
 <!DOCTYPE html>
-<!--
-To change this license header, choose License Headers in Project Properties.
-To change this template file, choose Tools | Templates
-and open the template in the editor.
--->
+
 <html>
     <head>
         <title>TODO supply a title</title>
@@ -11,16 +7,62 @@ and open the template in the editor.
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
 
-
+        <style>
+            th:nth-child(1),
+            td:nth-child(1) {
+                width: 50px;
+            }
+            th:nth-child(2),
+            td:nth-child(2) {
+                width: 400px;
+            }
+            th:nth-child(3),
+            td:nth-child(3) {
+                width: 100px;
+            }
+            th:nth-child(4),
+            td:nth-child(4) {
+                width: 100px;
+            }
+            th:nth-child(5),
+            td:nth-child(5) {
+                width: 100px;
+            }
+        </style>
 
     </head>
     <body>
+        <p th:text="'Hello, ' + ${name} + '!'" />
+        <h1>Стастика пользователей</h1>
+        <h6>Уникальный идентификатор документа <strong style='color:darkred'>1234</strong></h6>
+        <h3>Сервис "CryptoCore" </h3>
+        <hr/>
+        <ul>
+            <li>Всего пользователей в БД <strong>1</strong></li>
+            <li>VIP-пользователй в БД <strong>2</strong></li>
+            <li>Пользователей в БД за день <strong>3</strong></li>
+            <li>VIP-пользователй в БД за день <strong>4</strong></li>
+            <li>Дата и время <strong>12.08.2021 14:55</strong></li>
+        </ul>
+        <hr/>
+        <h3>Пользователи в БД:</h3>
 
-        <div id="app">
-            test     <p th:text="'Hello, ' + ${name} + '!'" />
-        </div>
 
 
+
+        <table>
+            <tr>
+                <td><strong>№</strong></td>
+                <td><strong>Пользователь</strong></td>
+                <td><strong>Номер телефона</strong></td>
+                <td><strong>Дата рождения</strong></td>
+                <td><strong>CashBack, руб</strong></td>
+            </tr>
+
+
+        </table>
+        <hr/>
+        <h4>Команда <span style='color:red'>CryptoCore</span> благодарит Вас за использование нашего сервиса! Мы стараемся быть лучше для Вас!</h4>
 
 
     </body>

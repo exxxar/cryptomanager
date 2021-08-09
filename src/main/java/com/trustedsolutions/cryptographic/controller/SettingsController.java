@@ -3,12 +3,14 @@ package com.trustedsolutions.cryptographic.controller;
 import com.core.cryptolib.CryptoLoggerService;
 import com.core.cryptolib.components.SettingObject;
 import com.core.cryptolib.components.Settings;
+import com.trustedsolutions.cryptographic.services.EmailService;
 
 import com.trustedsolutions.cryptographic.services.HistoryOperationService;
 
 import com.trustedsolutions.cryptographic.services.SettingsService;
 import com.trustedsolutions.cryptographic.services.storage.FileSystemStorageService;
 import com.trustedsolutions.cryptographic.util.PdfGenaratorUtil;
+import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -44,11 +46,14 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.annotation.Secured;
 
@@ -75,6 +80,9 @@ public class SettingsController {
     @Autowired
     PdfGenaratorUtil pdfGenaratorUtil;
 
+    @Autowired
+    public EmailService emailService;
+
     /*
      GET /settings/firmware/download/{fileName:.+} - скачивание файла прошивки
      POST /settings/firmware/upload - загрузка прошивки на сервер
@@ -89,13 +97,6 @@ public class SettingsController {
     @PostConstruct
     public void initialize() {
 
-        if (settingsService.getSettingsCount() == 0) {
-            settingsService.put("actualFirmware", "");
-            settingsService.put("previousFirmware", "");
-            settingsService.put("pathFirmware", "");
-            settingsService.put("pathPreviousFirmware", "");
-        }
-
         try {
             this.logger = new CryptoLoggerService(
                     appTitle,
@@ -107,15 +108,6 @@ public class SettingsController {
 
         }
 
-    }
-
-    @GetMapping(value = "/test")
-    public ResponseEntity<Object> test() {
-        logger.info("test");
-        logger.warn("test");
-        logger.error("test");
-        logger.fatal("test");
-        return null;
     }
 
     @Secured("ROLE_ADMIN")
@@ -276,7 +268,28 @@ public class SettingsController {
     public ResponseEntity<Object> pdf() throws Exception {
         Map<String, String> data = new HashMap<String, String>();
         data.put("name", "James");
-        pdfGenaratorUtil.createPdf("pdf", data);
-        return null;
+        Path path = pdfGenaratorUtil.createPdf("pdf", data);
+
+        if (settingsService.isExist("adminEmail")) {
+            emailService.sendMessageWithAttachment(
+                    settingsService.get("adminEmail").getValue(),
+                    messageSource.getMessage("mail.admin.pdf.title",
+                            null,
+                            LocaleContextHolder.getLocale()),
+                    messageSource.getMessage("mail.admin.pdf.message",
+                            null,
+                            LocaleContextHolder.getLocale()),
+                    path.toAbsolutePath().toString()
+            );
+
+            //Files.delete(path.toAbsolutePath());
+        }
+
+        JSONObject obj = new JSONObject();
+        obj.put("path", path.toAbsolutePath().toString());
+        obj.put("name", path.getFileName().toString());
+
+        
+        return new ResponseEntity<>(obj, HttpStatus.OK);
     }
 }

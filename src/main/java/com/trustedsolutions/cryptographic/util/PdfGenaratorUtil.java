@@ -21,17 +21,18 @@ import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import com.lowagie.text.DocumentException;
 import com.trustedsolutions.cryptographic.services.storage.StorageProperties;
+import java.nio.file.Path;
 
 @Component
 public class PdfGenaratorUtil {
 
     @Autowired
     private TemplateEngine templateEngine;
-    
+
     @Autowired
     StorageProperties storageProperties;
 
-    public void createPdf(String templateName, Map map) throws Exception {
+    public Path createPdf(String templateName, Map map) throws Exception {
         Assert.notNull(templateName, "The templateName can not be null");
         Context ctx = new Context();
         if (map != null) {
@@ -46,17 +47,17 @@ public class PdfGenaratorUtil {
         FileOutputStream os = null;
         String fileName = UUID.randomUUID().toString();
         try {
-            final File outputFile = File.createTempFile(fileName, ".pdf",new File(storageProperties.getUploadDir()));
+            final File outputFile = File.createTempFile(fileName, ".pdf", new File(storageProperties.getUploadDir()));
             os = new FileOutputStream(outputFile);
-
-            System.out.println("path=>" + outputFile.getAbsolutePath());
 
             ITextRenderer renderer = new ITextRenderer();
             renderer.setDocumentFromString(processedHtml);
             renderer.layout();
             renderer.createPDF(os, false);
             renderer.finishPDF();
-            System.out.println("PDF created successfully");
+          
+
+            return outputFile.getAbsoluteFile().toPath();
         } finally {
             if (os != null) {
                 try {
@@ -65,5 +66,6 @@ public class PdfGenaratorUtil {
                     /*ignore*/ }
             }
         }
+
     }
 }

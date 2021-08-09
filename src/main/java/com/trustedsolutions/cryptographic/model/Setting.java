@@ -18,7 +18,8 @@ import javax.persistence.Table;
 public class Setting implements Serializable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", unique = true)
     private Long id;
 
     @Column(length = 512, columnDefinition = "varchar(255) default ''", unique = true)
@@ -26,11 +27,11 @@ public class Setting implements Serializable {
 
     @Column(length = 512, columnDefinition = "varchar(255) default ''")
     private String settingValue;
-    
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @CreationTimestamp
     private LocalDateTime createDateTime;
-    
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @UpdateTimestamp
     private LocalDateTime updateDateTime;

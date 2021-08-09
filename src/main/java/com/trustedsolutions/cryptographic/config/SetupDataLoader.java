@@ -14,6 +14,7 @@ import com.trustedsolutions.cryptographic.repository.CompanyRepository;
 import com.trustedsolutions.cryptographic.repository.PrivilegeRepository;
 import com.trustedsolutions.cryptographic.repository.RoleRepository;
 import com.trustedsolutions.cryptographic.repository.UserRepository;
+import com.trustedsolutions.cryptographic.services.SettingsService;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,12 +48,23 @@ public class SetupDataLoader implements
     @Autowired
     private CompanyRepository companyRepository;
 
+    @Autowired
+    SettingsService settingsService;
+
     @Override
     @Transactional
     public void onApplicationEvent(ContextRefreshedEvent event) {
 
         if (alreadySetup) {
             return;
+        }
+
+        if (settingsService.getSettingsCount() == 0) {
+            settingsService.put("actualFirmware", "");
+            settingsService.put("previousFirmware", "");
+            settingsService.put("pathFirmware", "");
+            settingsService.put("pathPreviousFirmware", "");
+            settingsService.put("adminEmail", "exxxar@gmail.com");
         }
 
         Role r1 = new Role("ROLE_ADMIN");
@@ -63,9 +75,7 @@ public class SetupDataLoader implements
             r1 = roleRepository.save(r1);
             r2 = roleRepository.save(r2);
             r3 = roleRepository.save(r3);
-        }
-        else
-        {
+        } else {
             r1 = roleRepository.findByName("ROLE_ADMIN");
             r2 = roleRepository.findByName("ROLE_USER");
             r3 = roleRepository.findByName("ROLE_SECURE");
@@ -99,15 +109,6 @@ public class SetupDataLoader implements
             User result = userRepository.save(user);
         }
 
-//        user = new User();
-//        user.setName("Test2");
-//        user.setPassword(passwordEncoder.encode("test"));
-//        user.setEmail("test2@test.com");
-//       // user.setRole(2);
-//        //user.setRoles(Arrays.asList(adminRole));
-//        user.setEnabled(true);
-//        userRepository.save(user);
-//
         alreadySetup = true;
     }
 

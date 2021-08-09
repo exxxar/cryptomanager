@@ -1,8 +1,26 @@
 spring:
+    mail:
+        host: smtp.gmail.com
+        port: 587
+        username: exxxar@gmail.com
+        password: zeeqlnpvdhgmbwph
+        debug: true
+        templates:
+            path: /var/log/uukk
+                
+        properties:
+            mail:
+                transport: smtp
+                smtp:
+                    port: 25
+                    auth: true
+                    starttls:
+                        enable: true
+
     datasource:
-        url: jdbc:mysql://localhost:3306/spring_social?useSSL=false&serverTimezone=UTC&useLegacyDatetimeCode=false
-        username: root
-        password: 
+        url: jdbc:mysql://localhost:3306/db_cryptographic?useSSL=false&serverTimezone=UTC&useLegacyDatetimeCode=false
+        username: dbadmin2
+        password: QLlsHiYPOGHOrz1_
 
     jpa:
         show-sql: false
