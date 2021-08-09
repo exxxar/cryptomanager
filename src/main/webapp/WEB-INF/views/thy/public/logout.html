@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:insert="templates/layout.html :: headerfiles"></head>
+
+<body>
+
+<div class="container">
+
+</div>
+    See you soon!  <b id="time">5</b>секунд
+    или же нажмите <a th:href="@{/}">перейти!</a>
+<div th:insert="templates/layout.html :: footer"></div>
+
+<script>  
+    var spendTime = 5;
+       setInterval(function(){
+           var time = document.getElementById("time");
+            spendTime--;
+            time.innerHTML = spendTime;           
+       },1000);
+       setTimeout(function(){
+           window.location.href = '../';       
+    },5000); 
+</script>
+</body>
+
+</html>

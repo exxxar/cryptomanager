@@ -8,6 +8,7 @@ import com.trustedsolutions.cryptographic.services.HistoryOperationService;
 
 import com.trustedsolutions.cryptographic.services.SettingsService;
 import com.trustedsolutions.cryptographic.services.storage.FileSystemStorageService;
+import com.trustedsolutions.cryptographic.util.PdfGenaratorUtil;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -44,7 +45,9 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.annotation.Secured;
@@ -68,6 +71,9 @@ public class SettingsController {
 
     @Autowired
     FileSystemStorageService fileStorageService;
+
+    @Autowired
+    PdfGenaratorUtil pdfGenaratorUtil;
 
     /*
      GET /settings/firmware/download/{fileName:.+} - скачивание файла прошивки
@@ -265,4 +271,12 @@ public class SettingsController {
         return new ResponseEntity<>(historyOperationService.getAllHistoryOperations(pageable), HttpStatus.OK);
     }
 
+    @Secured("ROLE_ADMIN")
+    @GetMapping(value = "/histories/pdf")
+    public ResponseEntity<Object> pdf() throws Exception {
+        Map<String, String> data = new HashMap<String, String>();
+        data.put("name", "James");
+        pdfGenaratorUtil.createPdf("pdf", data);
+        return null;
+    }
 }

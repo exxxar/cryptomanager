@@ -1,0 +1,52 @@
+<!doctype html>
+<html xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:th="http://www.thymeleaf.org"
+      layout:decorator="layout">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport"
+              content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+              integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+        <title>Document</title>
+    </head>
+
+    <style>
+        .table-bordered thead td, .table-bordered thead th {
+            word-break: break-all;
+            text-overflow: ellipsis;
+            width: 20%;
+        }
+    </style>
+    <body>
+        <div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom box-shadow">
+            <h5 class="my-0 mr-md-auto font-weight-normal">Trusted solutions</h5>
+            <nav class="my-2 my-md-0 mr-md-3">
+                <a class="p-2 text-dark" th:href="@{/connections}">Connections</a>
+                <a class="p-2 text-dark" th:href="@{/transfers}">Transfers</a>
+            </nav>
+            <a class="btn btn-outline-primary" th:href="@{/login?logout}">Sign out</a>
+        </div>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12 col-sm-12 col-xs-12">
+                    <table id="datatable" class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Sender user id</th>
+                                <th>Recipient user id</th>
+                                <th>Created</th>
+                            </tr>
+
+                            <tr th:each="transfer : ${transfers}">
+                                <td th:text="${transfer.getSenderUserId()}"></td>
+                                <td th:text="${transfer.getRecipientUserId()}"></td>
+                                <td th:text="${transfer.getCreateDateTime()}"></td>
+                            </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
