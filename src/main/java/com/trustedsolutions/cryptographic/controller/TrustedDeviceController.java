@@ -48,6 +48,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.apache.log4j.Logger;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 @RestController
 public class TrustedDeviceController {
@@ -213,30 +214,26 @@ public class TrustedDeviceController {
         return new ResponseEntity<>(td, HttpStatus.OK);
     }
 
-//    @Secured({"ROLE_ADMIN"})
-//    @RequestMapping(value = "/trusted_devices/refresh/{publicDeviceId:[a-zA-Z0-9-_]{2,512}}",
-//            method = RequestMethod.GET,
-//            headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
-//    @ResponseBody
-//    public ResponseEntity<Object> refresh(@PathVariable("publicDeviceId") String publicDeviceId) throws NoSuchAlgorithmException {
-//        TrustedDevice td = tdRepository.findTrustedDeviceByDevicePublicId(publicDeviceId);
-//
-//        if (td == null) {
-//            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-//                    messageSource.getMessage("http.status.code.404",
-//                            null, LocaleContextHolder.getLocale())
-//            );
-//        }
-//        //todo: добавить проверку принадлежности устройства компании, а компании ключу
-//        byte[] tmp_actual = EncryptService.getSecureRandom(8);
-//        byte[] tmp_old = td.getDeviceActualKey();
-//
-//        td.setDeviceActualKeyEncode(tmp_actual);
-//        td.setDeviceOldKeyEncode(tmp_old);
-//        tdRepository.save(td);
-//
-//        return new ResponseEntity<>(td.toJSON(), HttpStatus.OK);
-//    }
+    @Secured({"ROLE_ADMIN"})
+    @RequestMapping(value = "/trusted_devices/reset/{tdId:[0-9]{1,100}}",
+            method = RequestMethod.GET,
+            headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
+    @ResponseBody
+    public ResponseEntity<Object> reset(@PathVariable("tdId") Long tdId) throws NoSuchAlgorithmException {
+        TrustedDevice td = tdRepository.findById(tdId).orElseThrow(()
+                -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        messageSource.getMessage("http.status.code.404",
+                                null, LocaleContextHolder.getLocale())
+                )
+        );
+
+        td.setDeviceActualKeyEncode(td.getDeviceResetKey());
+        td.setDeviceOldKeyEncode(td.getDeviceResetKey());
+        tdRepository.save(td);
+
+        return new ResponseEntity<>(td.toJSON(), HttpStatus.OK);
+    }
+
     @Secured("ROLE_ADMIN")
     @RequestMapping(value = "/trusted_devices/get/{deviceId:[a-zA-Z0-9-_]{2,512}}",
             method = RequestMethod.GET,
@@ -254,7 +251,7 @@ public class TrustedDeviceController {
         return new ResponseEntity<>(td, HttpStatus.OK);
     }
 
-   // @Secured({"ROLE_ADMIN", "ROLE_USER"})
+    // @Secured({"ROLE_ADMIN", "ROLE_USER"})
     @RequestMapping(value = "/trusted_devices/reencrypt",
             method = RequestMethod.POST,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})

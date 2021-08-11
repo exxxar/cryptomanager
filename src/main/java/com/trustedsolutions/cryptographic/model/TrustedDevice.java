@@ -27,8 +27,8 @@ public class TrustedDevice implements Serializable {
     @Column(name = "device_public_id", unique = true)
     private String devicePublicId;
 
-    @Column(name = "device_factory_key")
-    private String deviceFactoryKey;
+    @Column(name = "device_reset_key")
+    private String deviceResetKey;
 
     @Column(name = "device_private_id", unique = true)
     private String devicePrivateId;
@@ -79,7 +79,7 @@ public class TrustedDevice implements Serializable {
 
         this.setDeviceActualKey(tdForm.getDeviceActualKey());
         this.setDeviceOldKey(tdForm.getDeviceOldKey());
-        this.setDeviceFactoryKey(tdForm.getDeviceFactoryKey());
+        this.setDeviceResetKey(tdForm.getDeviceResetKey());
         this.setAttempts(tdForm.getAttempts());
 
         this.active = tdForm.isActive();
@@ -91,14 +91,14 @@ public class TrustedDevice implements Serializable {
             String devicePrivateId,
             byte[] deviceActualKey,
             byte[] deviceOldKey,
-            byte[] deviceFactoryKey,
+            byte[] deviceResetKey,
             boolean active,
             String description) {
         this.devicePublicId = devicePublicId;
         this.devicePrivateId = devicePrivateId;
         this.setDeviceActualKeyEncode(deviceActualKey);
         this.setDeviceOldKeyEncode(deviceOldKey);
-        this.setDeviceFactoryKeyEncode(deviceFactoryKey);
+        this.setDeviceResetKeyEncode(deviceResetKey);
         this.active = active;
         this.attempts = 0;
         this.description = description;
@@ -116,7 +116,7 @@ public class TrustedDevice implements Serializable {
         this.devicePrivateId = devicePrivateId;
         this.setDeviceActualKey(deviceActualKey);
         this.setDeviceOldKey(deviceOldKey);
-        this.setDeviceFactoryKey(deviceFactoryKey);
+        this.setDeviceResetKey(deviceFactoryKey);
         this.description = description;
         this.attempts = 0;
         this.currentFirmware = "";
@@ -142,8 +142,8 @@ public class TrustedDevice implements Serializable {
         this.devicePrivateId = devicePrivateId;
     }
 
-    public void setDeviceFactoryKey(String deviceFactoryKey) {
-        this.deviceFactoryKey = deviceFactoryKey;
+    public void setDeviceResetKey(String deviceResetKey) {
+        this.deviceResetKey = deviceResetKey;
     }
 
     public void setDeviceActualKey(String deviceActualKey) {
@@ -154,8 +154,8 @@ public class TrustedDevice implements Serializable {
         this.deviceOldKey = deviceOldKey;
     }
 
-    public void setDeviceFactoryKeyEncode(byte[] deviceFactoryKey) {
-        this.deviceFactoryKey = Base64.getEncoder().encodeToString(deviceFactoryKey);
+    public void setDeviceResetKeyEncode(byte[] deviceFactoryKey) {
+        this.deviceResetKey = Base64.getEncoder().encodeToString(deviceFactoryKey);
     }
 
     public void setDeviceActualKeyEncode(byte[] deviceActualKey) {
@@ -224,13 +224,13 @@ public class TrustedDevice implements Serializable {
         this.currentFirmware = currentFirmware;
     }
 
-    public byte[] getDeviceFactoryKey() {
+    public byte[] getDeviceResetKey() {
 
         try {
-            return Base64.getDecoder().decode(deviceFactoryKey.getBytes());
+            return Base64.getDecoder().decode(deviceResetKey.getBytes());
         } catch (Exception ex) {
             System.out.print("getDeviceFactoryKey=>" + ex.getMessage());
-            return deviceFactoryKey.getBytes();
+            return deviceResetKey.getBytes();
         }
 
     }
@@ -259,7 +259,7 @@ public class TrustedDevice implements Serializable {
         device.put("deviceActualKey", deviceActualKey);
         device.put("attempts", attempts);
         device.put("actualFirmware", currentFirmware);
-        device.put("deviceFactoryKey", deviceFactoryKey);
+        device.put("deviceResetKey", deviceResetKey);
         device.put("deviceOldKey", deviceOldKey);
         device.put("devicePrivateId", devicePrivateId);
         device.put("devicePublicId", devicePublicId);
@@ -275,7 +275,7 @@ public class TrustedDevice implements Serializable {
         tdf.setDescription(description);
         tdf.setCurrentFirmware(currentFirmware);
         tdf.setDeviceActualKey(deviceActualKey);
-        tdf.setDeviceFactoryKey(deviceFactoryKey);
+        tdf.setDeviceResetKey(deviceResetKey);
         tdf.setDeviceOldKey(deviceOldKey);
         tdf.setDevicePrivateId(devicePrivateId);
         tdf.setDevicePublicId(devicePublicId);
