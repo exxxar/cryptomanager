@@ -1,5 +1,9 @@
 package com.trustedsolutions.cryptographic.security;
 
+import com.trustedsolutions.cryptographic.exception.TokenRefreshException;
+import com.trustedsolutions.cryptographic.model.RefreshToken;
+import com.trustedsolutions.cryptographic.services.RefreshTokenService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +19,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Optional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
@@ -24,23 +31,39 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private CustomUserDetailsService customUserDetailsService;
 
+    @Autowired
+    RefreshTokenService refreshTokenService;
+
     private static final Logger logger = LoggerFactory.getLogger(TokenAuthenticationFilter.class);
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
-            
+
             String jwt = getJwtFromRequest(request);
+
+            System.out.println("ANY REQUEST WITH TOKEN " + jwt);
 
             if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
                 Long userId = tokenProvider.getUserIdFromToken(jwt);
 
+                RefreshToken refresh = refreshTokenService.findByUserId(userId);
+                
+                if (refresh==null){
+                     filterChain.doFilter(request, response);
+                     return;
+                }
+
+                refreshTokenService.verifyExpiration(refresh);
+
                 UserDetails userDetails = customUserDetailsService.loadUserById(userId);
+
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
+
         } catch (Exception ex) {
             logger.error("Could not set user authentication in security context", ex);
         }

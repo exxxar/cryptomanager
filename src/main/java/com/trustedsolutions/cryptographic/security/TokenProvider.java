@@ -8,6 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class TokenProvider {
@@ -59,6 +60,18 @@ public class TokenProvider {
             logger.error("JWT claims string is empty.");
         }
         return false;
+    }
+
+    public String generateJwtToken(UserPrincipal userPrincipal) {
+        return generateTokenFromUsername(userPrincipal.getUsername());
+    }
+
+    public String generateTokenFromUsername(String username) {
+        return Jwts.builder().setSubject(username).setIssuedAt(new Date())
+                .setExpiration(new Date((new Date()).getTime() + appProperties.getAuth()
+                        .getTokenExpirationMsec()))
+                .signWith(SignatureAlgorithm.HS512, appProperties.getAuth().getTokenSecret())
+                .compact();
     }
 
 }

@@ -1,19 +1,27 @@
 package com.trustedsolutions.cryptographic.controller;
 
 import com.trustedsolutions.cryptographic.exception.BadRequestException;
+import com.trustedsolutions.cryptographic.exception.TokenRefreshException;
 import com.trustedsolutions.cryptographic.model.AuthProvider;
 import com.trustedsolutions.cryptographic.model.Company;
+import com.trustedsolutions.cryptographic.model.RefreshToken;
 import com.trustedsolutions.cryptographic.model.Role;
 import com.trustedsolutions.cryptographic.model.User;
 import com.trustedsolutions.cryptographic.payload.ApiResponse;
 import com.trustedsolutions.cryptographic.payload.AuthResponse;
+import com.trustedsolutions.cryptographic.payload.LogOutRequest;
 import com.trustedsolutions.cryptographic.payload.LoginRequest;
 import com.trustedsolutions.cryptographic.payload.SignUpRequest;
+import com.trustedsolutions.cryptographic.payload.TokenRefreshRequest;
+import com.trustedsolutions.cryptographic.payload.TokenRefreshResponse;
 import com.trustedsolutions.cryptographic.repository.CompanyRepository;
 import com.trustedsolutions.cryptographic.repository.RoleRepository;
 import com.trustedsolutions.cryptographic.repository.UserRepository;
+import com.trustedsolutions.cryptographic.security.CurrentUser;
 import com.trustedsolutions.cryptographic.security.TokenProvider;
+import com.trustedsolutions.cryptographic.security.UserPrincipal;
 import com.trustedsolutions.cryptographic.services.EmailService;
+import com.trustedsolutions.cryptographic.services.RefreshTokenService;
 import com.trustedsolutions.cryptographic.services.SettingsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +37,8 @@ import javax.validation.Valid;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.annotation.Secured;
 
 @RestController
 @RequestMapping("/auth")
@@ -58,6 +68,9 @@ public class AuthController {
     @Autowired
     SettingsService settingsService;
 
+    @Autowired
+    RefreshTokenService refreshTokenService;
+
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
 
@@ -70,8 +83,10 @@ public class AuthController {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
+        RefreshToken refreshToken = refreshTokenService.createRefreshTokenByEmail(loginRequest.getEmail());
         String token = tokenProvider.createToken(authentication);
-        return ResponseEntity.ok(new AuthResponse(token));
+        return ResponseEntity.ok(new AuthResponse(token, refreshToken.getToken()));
+
     }
 
     @PostMapping("/signup")
@@ -114,6 +129,28 @@ public class AuthController {
 
         return ResponseEntity.created(location)
                 .body(new ApiResponse(true, "User registered successfully@"));
+    }
+
+    @PostMapping("/refreshtoken")
+    public ResponseEntity<?> refreshtoken(@Valid @RequestBody TokenRefreshRequest request) {
+        String requestRefreshToken = request.getRefreshToken();
+
+        return refreshTokenService.findByToken(requestRefreshToken)
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    String token = tokenProvider.generateTokenFromUsername(user.getName());
+                    return ResponseEntity.ok(new TokenRefreshResponse(token, requestRefreshToken));
+                })
+                .orElseThrow(() -> new TokenRefreshException(requestRefreshToken,
+                "Refresh token is not in database!"));
+    }
+
+    @PostMapping("/logout")
+    @Secured({"ROLE_USER", "ROLE_ADMIN"})
+    public ResponseEntity<?> logoutUser(@CurrentUser UserPrincipal userPrincipal) {
+        refreshTokenService.deleteByUserId(userPrincipal.getId());
+        return new ResponseEntity<>(null, HttpStatus.NO_CONTENT);
     }
 
 }

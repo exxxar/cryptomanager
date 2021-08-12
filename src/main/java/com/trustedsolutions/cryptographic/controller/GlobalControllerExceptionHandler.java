@@ -1,6 +1,8 @@
 package com.trustedsolutions.cryptographic.controller;
 
 import com.core.cryptolib.CryptoLoggerService;
+import com.trustedsolutions.cryptographic.exception.TokenRefreshException;
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -200,6 +202,15 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
         Object responseBody = this.errorPrepareFactory(ex.getStatus(), map.get(ex.getStatus()), null);
 
         return new ResponseEntity<>(responseBody, ex.getStatus());
+    }
+
+    @ExceptionHandler(value = TokenRefreshException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ResponseEntity<Object> handleTokenRefreshException(TokenRefreshException ex, WebRequest request) {
+
+        JSONObject message = this.errorPrepareFactory(HttpStatus.FORBIDDEN, "http.status.code.400", null);
+
+        return new ResponseEntity<>(message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
 }
