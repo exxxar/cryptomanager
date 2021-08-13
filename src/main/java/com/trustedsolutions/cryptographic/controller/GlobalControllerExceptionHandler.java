@@ -224,6 +224,6 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
         JSONObject message = this.errorPrepareFactory(HttpStatus.FORBIDDEN, "http.status.code.403", null);
 
         return new ResponseEntity<>(message, HttpStatus.FORBIDDEN);
-    }
+}
 
 }

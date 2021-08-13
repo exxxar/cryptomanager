@@ -14,9 +14,7 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.Date;
 import java.util.stream.Stream;
 import org.springframework.data.repository.CrudRepository;
-import org.springframework.stereotype.Repository;
 
-@Repository
 public interface PasswordResetTokenRepository extends CrudRepository<PasswordResetToken, Long> {
 
     PasswordResetToken findByToken(String token);

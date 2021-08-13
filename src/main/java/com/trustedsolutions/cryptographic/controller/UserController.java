@@ -41,12 +41,11 @@ public class UserController {
     private RoleRepository roleRepository;
 
     @GetMapping("/user/me")
-    @Secured({"ROLE_USER","ROLE_ADMIN"})
+    @Secured("ROLE_USER")
     public User getCurrentUser(@CurrentUser UserPrincipal userPrincipal) {
         return userRepository.findById(userPrincipal.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userPrincipal.getId()));
     }
-    
 
     @Secured("ROLE_ADMIN")
     @RequestMapping(value = "/users",
@@ -89,7 +88,7 @@ public class UserController {
         );
 
         List<Role> roles = new ArrayList<>();
-
+        
         for (Long id : userRoleForm.getRoleIds()) {
             Role role = roleRepository.findById(id).orElseThrow(()
                     -> new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -97,16 +96,14 @@ public class UserController {
                                     null, LocaleContextHolder.getLocale())
                     )
             );
-
-            if (!roles.contains(role)) {
-                roles.add(role);
-            }
+            
+            roles.add(role);
 
         }
 
         user.setRoles(roles);
         userRepository.save(user);
-
+        
         return new ResponseEntity<>(user, HttpStatus.OK);
     }
 

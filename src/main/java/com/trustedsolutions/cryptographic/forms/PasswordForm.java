@@ -10,7 +10,7 @@ package com.trustedsolutions.cryptographic.forms;
  * @author SAMS
  */
 public class PasswordForm {
-
+    
     private String oldPassword;
 
     private String token;
@@ -19,7 +19,7 @@ public class PasswordForm {
 
     public String getOldPassword() {
         return oldPassword;
-    }
+}
 
     public void setOldPassword(String oldPassword) {
         this.oldPassword = oldPassword;

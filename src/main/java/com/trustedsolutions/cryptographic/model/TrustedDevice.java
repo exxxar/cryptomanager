@@ -30,9 +30,6 @@ public class TrustedDevice implements Serializable {
     @Column(name = "device_reset_key")
     private String deviceResetKey;
 
-    @Column(name = "device_factory_key")
-    private String deviceFactoryKey;
-
     @Column(name = "device_private_id", unique = true)
     private String devicePrivateId;
 
@@ -41,10 +38,6 @@ public class TrustedDevice implements Serializable {
 
     @Column(name = "device_old_key")
     private String deviceOldKey;
-
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Column(name = "last_update_actual_key_date_time", nullable = true)
-    private LocalDateTime lastUpdateActualKeyDateTime;
 
     @Column(name = "active", columnDefinition = "boolean default false")
     private boolean active;
@@ -65,11 +58,13 @@ public class TrustedDevice implements Serializable {
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @UpdateTimestamp
+
     @Column(name = "update_date_time")
     private LocalDateTime updateDateTime;
 
 //       @ManyToMany(mappedBy = "trusted_devices")
 //    private Collection<Company> company;
+    
     @ManyToMany(mappedBy = "trustedDevices")
     private Set<Company> companies;
 
@@ -85,7 +80,6 @@ public class TrustedDevice implements Serializable {
         this.setDeviceActualKey(tdForm.getDeviceActualKey());
         this.setDeviceOldKey(tdForm.getDeviceOldKey());
         this.setDeviceResetKey(tdForm.getDeviceResetKey());
-        this.setDeviceFactoryKey(tdForm.getDeviceFactoryKey());
         this.setAttempts(tdForm.getAttempts());
 
         this.active = tdForm.isActive();
@@ -98,7 +92,6 @@ public class TrustedDevice implements Serializable {
             byte[] deviceActualKey,
             byte[] deviceOldKey,
             byte[] deviceResetKey,
-            byte[] deviceFactoryKey,
             boolean active,
             String description) {
         this.devicePublicId = devicePublicId;
@@ -106,7 +99,6 @@ public class TrustedDevice implements Serializable {
         this.setDeviceActualKeyEncode(deviceActualKey);
         this.setDeviceOldKeyEncode(deviceOldKey);
         this.setDeviceResetKeyEncode(deviceResetKey);
-        this.setDeviceFactoryKeyEncode(deviceFactoryKey);
         this.active = active;
         this.attempts = 0;
         this.description = description;
@@ -117,7 +109,6 @@ public class TrustedDevice implements Serializable {
             String devicePrivateId,
             String deviceActualKey,
             String deviceOldKey,
-            String deviceResetKey,
             String deviceFactoryKey,
             boolean active,
             String description) {
@@ -125,8 +116,7 @@ public class TrustedDevice implements Serializable {
         this.devicePrivateId = devicePrivateId;
         this.setDeviceActualKey(deviceActualKey);
         this.setDeviceOldKey(deviceOldKey);
-        this.setDeviceResetKey(deviceResetKey);
-        this.setDeviceFactoryKey(deviceFactoryKey);
+        this.setDeviceResetKey(deviceFactoryKey);
         this.description = description;
         this.attempts = 0;
         this.currentFirmware = "";
@@ -164,12 +154,8 @@ public class TrustedDevice implements Serializable {
         this.deviceOldKey = deviceOldKey;
     }
 
-    public void setDeviceResetKeyEncode(byte[] deviceResetKey) {
-        this.deviceResetKey = Base64.getEncoder().encodeToString(deviceResetKey);
-    }
-
-    public void setDeviceFactoryKeyEncode(byte[] deviceFactoryKey) {
-        this.deviceFactoryKey = Base64.getEncoder().encodeToString(deviceFactoryKey);
+    public void setDeviceResetKeyEncode(byte[] deviceFactoryKey) {
+        this.deviceResetKey = Base64.getEncoder().encodeToString(deviceFactoryKey);
     }
 
     public void setDeviceActualKeyEncode(byte[] deviceActualKey) {
@@ -243,18 +229,7 @@ public class TrustedDevice implements Serializable {
         try {
             return Base64.getDecoder().decode(deviceResetKey.getBytes());
         } catch (Exception ex) {
-
-            return deviceResetKey.getBytes();
-        }
-
-    }
-
-    public byte[] getDeviceFactoryKey() {
-
-        try {
-            return Base64.getDecoder().decode(deviceFactoryKey.getBytes());
-        } catch (Exception ex) {
-
+            System.out.print("getDeviceFactoryKey=>" + ex.getMessage());
             return deviceResetKey.getBytes();
         }
 
@@ -264,7 +239,7 @@ public class TrustedDevice implements Serializable {
         try {
             return Base64.getDecoder().decode(deviceOldKey.getBytes());
         } catch (Exception ex) {
-
+            System.out.print("getDeviceOldKey=>" + ex.getMessage());
             return deviceOldKey.getBytes();
         }
     }
@@ -285,9 +260,7 @@ public class TrustedDevice implements Serializable {
         device.put("attempts", attempts);
         device.put("actualFirmware", currentFirmware);
         device.put("deviceResetKey", deviceResetKey);
-        device.put("deviceFactoryKey", deviceFactoryKey);
         device.put("deviceOldKey", deviceOldKey);
-        device.put("lastUpdateActualKeyDateTime", lastUpdateActualKeyDateTime);
         device.put("devicePrivateId", devicePrivateId);
         device.put("devicePublicId", devicePublicId);
         device.put("createDateTime", createDateTime);
@@ -303,25 +276,12 @@ public class TrustedDevice implements Serializable {
         tdf.setCurrentFirmware(currentFirmware);
         tdf.setDeviceActualKey(deviceActualKey);
         tdf.setDeviceResetKey(deviceResetKey);
-        tdf.setDeviceFactoryKey(deviceFactoryKey);
         tdf.setDeviceOldKey(deviceOldKey);
         tdf.setDevicePrivateId(devicePrivateId);
         tdf.setDevicePublicId(devicePublicId);
         tdf.setAttempts(attempts);
 
         return tdf;
-    }
-
-    public void setDeviceFactoryKey(String deviceFactoryKey) {
-        this.deviceFactoryKey = deviceFactoryKey;
-    }
-
-    public LocalDateTime getLastUpdateActualKeyDateTime() {
-        return lastUpdateActualKeyDateTime;
-    }
-
-    public void setLastUpdateActualKeyDateTime(LocalDateTime lastUpdateActualKeyDateTime) {
-        this.lastUpdateActualKeyDateTime = lastUpdateActualKeyDateTime;
     }
 
 }

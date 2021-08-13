@@ -125,6 +125,7 @@ public class AuthController {
                         loginRequest.getPassword()
                 )
         );
+
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         RefreshToken refreshToken = refreshTokenService.createRefreshTokenByEmail(loginRequest.getEmail());
@@ -224,7 +225,7 @@ public class AuthController {
         obj.put("title", "Reset password");
 
         return new ResponseEntity<>(obj, HttpStatus.OK);
-    }
+}
 
     // Save password
     @PostMapping("/reset/save")

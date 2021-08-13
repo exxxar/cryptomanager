@@ -1,5 +1,6 @@
 package com.trustedsolutions.cryptographic.security;
 
+import com.trustedsolutions.cryptographic.exception.TokenRefreshException;
 import com.trustedsolutions.cryptographic.model.RefreshToken;
 import com.trustedsolutions.cryptographic.services.RefreshTokenService;
 
@@ -18,7 +19,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.List;
+import java.util.Optional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
@@ -39,17 +42,19 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
             String jwt = getJwtFromRequest(request);
 
+            System.out.println("ANY REQUEST WITH TOKEN " + jwt);
+
             if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
                 Long userId = tokenProvider.getUserIdFromToken(jwt);
 
-                List<RefreshToken> refresh = refreshTokenService.findByUserId(userId);
-
-                if (refresh.isEmpty()) {
-                    filterChain.doFilter(request, response);
-                    return;
+                RefreshToken refresh = refreshTokenService.findByUserId(userId);
+                
+                if (refresh==null){
+                     filterChain.doFilter(request, response);
+                     return;
                 }
 
-                refreshTokenService.verifyExpiration(refresh.get(refresh.size() - 1));
+                refreshTokenService.verifyExpiration(refresh);
 
                 UserDetails userDetails = customUserDetailsService.loadUserById(userId);
 
