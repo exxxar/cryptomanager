@@ -65,6 +65,7 @@ public class SetupDataLoader implements
             settingsService.put("pathFirmware", "");
             settingsService.put("pathPreviousFirmware", "");
             settingsService.put("adminEmail", "exxxar@gmail.com");
+            settingsService.put("maxDeviceOldKeyLifetime", "864000000");
         }
 
         Role r1 = new Role("ROLE_ADMIN");

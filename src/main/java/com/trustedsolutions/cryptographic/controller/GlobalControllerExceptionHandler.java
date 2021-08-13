@@ -2,11 +2,13 @@ package com.trustedsolutions.cryptographic.controller;
 
 import com.core.cryptolib.CryptoLoggerService;
 import com.trustedsolutions.cryptographic.exception.TokenRefreshException;
+import java.io.IOException;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +36,8 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import org.apache.log4j.Logger;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 
 @ControllerAdvice
 public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHandler {
@@ -208,9 +212,18 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public ResponseEntity<Object> handleTokenRefreshException(TokenRefreshException ex, WebRequest request) {
 
-        JSONObject message = this.errorPrepareFactory(HttpStatus.FORBIDDEN, "http.status.code.400", null);
+        JSONObject message = this.errorPrepareFactory(HttpStatus.FORBIDDEN, "http.status.code.403", null);
 
-        return new ResponseEntity<>(message, HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(message, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(value = {AccessDeniedException.class, AuthenticationException.class})
+    public ResponseEntity<Object> commence(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse,
+            AccessDeniedException accessDeniedException) throws IOException {
+
+        JSONObject message = this.errorPrepareFactory(HttpStatus.FORBIDDEN, "http.status.code.403", null);
+
+        return new ResponseEntity<>(message, HttpStatus.FORBIDDEN);
     }
 
 }

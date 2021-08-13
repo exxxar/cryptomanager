@@ -23,7 +23,9 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.Date;
 import javax.annotation.PostConstruct;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -309,7 +311,6 @@ public class TrustedDeviceController {
 
                 if (tdSender == null || tdRecipient == null) {
                     infoRequestForm.setData(ups.denailRequest().toBase64SimpleJSON());
-                    logger.info("reencrypt stepXX");
                     return new ResponseEntity<>(infoRequestForm.toJSON(),
                             HttpStatus.OK);
                 }
@@ -351,14 +352,16 @@ public class TrustedDeviceController {
 
                 byte[] tmp_recipient_actual_key = tdRecipient.getDeviceActualKey();
                 byte[] tmp_sender_actual_key = tdSender.getDeviceActualKey();
-
+                
                 tdRecipient.setDeviceActualKeyEncode(recipientDeviceNewKey);
                 tdRecipient.setDeviceOldKeyEncode(tmp_recipient_actual_key);
+                tdRecipient.setLastUpdateActualKeyDateTime(LocalDateTime.now());
                 tdRecipient.setAttempts(0);
                 tdRepository.save(tdRecipient);
 
                 tdSender.setDeviceActualKeyEncode(senderDeviceNewKey);
                 tdSender.setDeviceOldKeyEncode(tmp_sender_actual_key);
+                tdSender.setLastUpdateActualKeyDateTime(LocalDateTime.now());
                 tdSender.setAttempts(0);
                 tdRepository.save(tdSender);
 

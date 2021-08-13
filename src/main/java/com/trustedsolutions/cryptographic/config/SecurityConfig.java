@@ -111,6 +111,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     .disable()
                 .exceptionHandling()
                     .authenticationEntryPoint(new RestAuthenticationEntryPoint())
+                   // .accessDeniedHandler(new MyAccessDeniedHandler())
                     .and()
                 .authorizeRequests()
                     .antMatchers("/",

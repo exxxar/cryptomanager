@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.trustedsolutions.cryptographic.model.RefreshToken;
 import com.trustedsolutions.cryptographic.repository.RefreshTokenRepository;
 import com.trustedsolutions.cryptographic.repository.UserRepository;
+import java.util.List;
 
 @Service
 public class RefreshTokenService {
@@ -30,7 +31,7 @@ public class RefreshTokenService {
         return refreshTokenRepository.findByToken(token);
     }
     
-      public RefreshToken findByUserId(Long userId) {
+      public List<RefreshToken> findByUserId(Long userId) {
         return refreshTokenRepository.findByUserId(userId);
     }
     
