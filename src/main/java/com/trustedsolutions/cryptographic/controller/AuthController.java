@@ -100,13 +100,14 @@ public class AuthController {
                 "Email not found!")
                 );;
 
-        String password = passwordEncoder.encode(UUID.randomUUID().toString());
+        String tmpPassword = UUID.randomUUID().toString();
+        String password = passwordEncoder.encode(tmpPassword);
 
         user.setPassword(password);
         userRepository.save(user);
 
         emailService.sendSimpleMessage(resetPasswordForm.getEmail(), "reset password",
-                "new password: " + password);
+                "new password: " + tmpPassword);
 
         JSONObject obj = new JSONObject();
         obj.put("code", HttpStatus.OK);
@@ -137,7 +138,8 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignUpRequest signUpRequest) {
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            throw new BadRequestException("Email address already in use.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "Email not found!");
         }
 
         // Creating user's account
