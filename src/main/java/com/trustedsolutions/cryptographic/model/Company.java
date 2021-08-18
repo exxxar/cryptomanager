@@ -41,13 +41,16 @@ public class Company implements Serializable {
     private Long id;
 
     @Column(name = "name", columnDefinition = "varchar(255) default ''")
-    private String companyName;
+    private String name;
 
     @Column(name = "description", columnDefinition = "varchar(255) default ''")
     private String description;
 
     @Column(name = "user_check_url", columnDefinition = "varchar(255) default ''")
     private String userCheckUrl;
+
+    @Column(name = "callback_url", columnDefinition = "varchar(255) default ''")
+    private String callbackUrl;
 
     @Column(name = "active")
     private boolean active = true;
@@ -61,7 +64,7 @@ public class Company implements Serializable {
 //    private User user;
     @OneToOne(mappedBy = "company")
     private User user;
-    
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @CreationTimestamp
     @Column(name = "create_date_time")
@@ -78,43 +81,52 @@ public class Company implements Serializable {
     }
 
     public Company() {
-        this.companyName = "";
+        this.name = "";
 
         this.description = "";
 
         this.userCheckUrl = "";
-        
+
         this.active = true;
-        
-        
+
     }
 
     public void setCompany(CompanyForm company) {
-        this.companyName = company.getCompanyName() == null ? this.companyName : company.getCompanyName();
+        this.name = company.getName() == null ? this.name : company.getName();
 
         this.description = company.getDescription() == null ? this.description : company.getDescription();
         this.userCheckUrl = company.getUserCheckUrl() == null ? this.userCheckUrl : company.getUserCheckUrl();
 
+        this.active = company.getActive();
+
+        this.callbackUrl = company.getCallbackUrl();
+
     }
 
     public Company(String companyName, String description, String callbackUrl, String userCheckUrl, LocalDateTime createDateTime) {
-        this.companyName = companyName;
+        this.name = companyName;
 
         this.description = description;
 
         this.userCheckUrl = userCheckUrl;
         this.createDateTime = createDateTime;
+
+        this.active = true;
+
     }
 
     public Company(Long id, String companyName, String description, String userCheckUrl, LocalDateTime createDateTime, LocalDateTime updateDateTime) {
         this.id = id;
 
-        this.companyName = companyName;
+        this.name = companyName;
         this.description = description;
 
         this.userCheckUrl = userCheckUrl;
         this.createDateTime = createDateTime;
         this.updateDateTime = updateDateTime;
+        
+         this.active = true;
+        
     }
 
     public Long getId() {
@@ -125,12 +137,12 @@ public class Company implements Serializable {
         this.id = id;
     }
 
-    public String getCompanyName() {
-        return companyName;
+    public String getName() {
+        return name;
     }
 
-    public void setCompanyName(String companyName) {
-        this.companyName = companyName;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getDescription() {
@@ -189,9 +201,10 @@ public class Company implements Serializable {
         JSONObject company = new JSONObject();
         company.put("id", getId());
         company.put("active", isActive());
-        company.put("companyName", getCompanyName());
+        company.put("name", getName());
         company.put("createDateTime", getCreateDateTime());
         company.put("userCheckUrl", getUserCheckUrl());
+        company.put("callbackUrl", getCallbackUrl());
 
         JSONArray arr = new JSONArray();
 
@@ -204,6 +217,14 @@ public class Company implements Serializable {
         company.put("trustedDevices", arr);
 
         return company;
+    }
+
+    public String getCallbackUrl() {
+        return callbackUrl;
+    }
+
+    public void setCallbackUrl(String callbackUrl) {
+        this.callbackUrl = callbackUrl;
     }
 
 }

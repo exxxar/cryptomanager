@@ -139,7 +139,7 @@ public class AuthController {
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignUpRequest signUpRequest) {
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                "Email not found!");
+                    "Email not found!");
         }
 
         // Creating user's account
@@ -155,7 +155,7 @@ public class AuthController {
         user.setRoles(roles);
         Company company = new Company();
         company.setActive(true);
-        company.setCompanyName(signUpRequest.getName());
+        company.setName(signUpRequest.getName());
         company.setDescription("");
         company.setUserCheckUrl("");
         company = companyRepository.save(company);
@@ -217,7 +217,7 @@ public class AuthController {
         final PasswordResetToken myToken = new PasswordResetToken(token, user);
         passwordTokenRepository.save(myToken);
 
-        final String url = appClientUrl + "/reset/change?token=" + token;
+        final String url = settingsService.get("appClientUrl", appClientUrl) + "/reset/change?token=" + token;
 
         emailService.sendSimpleMessage(user.getEmail(), "Reset password", url);
 
@@ -227,7 +227,7 @@ public class AuthController {
         obj.put("title", "Reset password");
 
         return new ResponseEntity<>(obj, HttpStatus.OK);
-}
+    }
 
     // Save password
     @PostMapping("/reset/save")

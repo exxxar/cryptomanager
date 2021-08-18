@@ -60,12 +60,14 @@ public class SetupDataLoader implements
         }
 
         if (settingsService.getSettingsCount() == 0) {
+           
             settingsService.put("actualFirmware", "");
             settingsService.put("previousFirmware", "");
             settingsService.put("pathFirmware", "");
             settingsService.put("pathPreviousFirmware", "");
             settingsService.put("adminEmail", "exxxar@gmail.com");
             settingsService.put("maxDeviceOldKeyLifetime", "864000000");
+            settingsService.put("appClientUrl", "http://localost:3000");
         }
 
         Role r1 = new Role("ROLE_ADMIN");
@@ -99,7 +101,7 @@ public class SetupDataLoader implements
             user.setRoles(roles);
             Company company = new Company();
             company.setActive(true);
-            company.setCompanyName("MACSOFT");
+            company.setName("MACSOFT");
             company.setDescription("");
             company.setUserCheckUrl("");
             company = companyRepository.save(company);

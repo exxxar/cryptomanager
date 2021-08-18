@@ -25,7 +25,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.Date;
 import javax.annotation.PostConstruct;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -36,7 +35,6 @@ import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,7 +48,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.apache.log4j.Logger;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 @RestController
 public class TrustedDeviceController {
@@ -121,6 +118,15 @@ public class TrustedDeviceController {
 //        return new ResponseEntity<>(message, HttpStatus.OK);
 //    }
     @Secured("ROLE_ADMIN")
+    @RequestMapping(value = "/trusted_devices/free",
+            method = RequestMethod.GET,
+            headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
+    @ResponseBody
+    public ResponseEntity<Object> freeDevices(Pageable pageable) {
+        return new ResponseEntity<>(tdRepository.allFreeDevices(pageable), HttpStatus.OK);
+    }
+
+    @Secured("ROLE_ADMIN")
     @RequestMapping(value = "/trusted_devices",
             method = RequestMethod.GET,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
@@ -136,14 +142,11 @@ public class TrustedDeviceController {
     @ResponseBody
     public ResponseEntity<Object> get(@PathVariable Long tdId) {
 
-        TrustedDevice td = tdRepository.findTrustedDeviceById(tdId);
-
-        if (td == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    messageSource.getMessage("http.status.code.404",
-                            null, LocaleContextHolder.getLocale())
-            );
-        }
+        System.out.println("ID=>" + tdId);
+        TrustedDevice td = tdRepository.findById(tdId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                messageSource.getMessage("http.status.code.404",
+                        null, LocaleContextHolder.getLocale())
+        ));
 
         return new ResponseEntity<>(td, HttpStatus.OK);
     }
@@ -352,7 +355,7 @@ public class TrustedDeviceController {
 
                 byte[] tmp_recipient_actual_key = tdRecipient.getDeviceActualKey();
                 byte[] tmp_sender_actual_key = tdSender.getDeviceActualKey();
-                
+
                 tdRecipient.setDeviceActualKeyEncode(recipientDeviceNewKey);
                 tdRecipient.setDeviceOldKeyEncode(tmp_recipient_actual_key);
                 tdRecipient.setLastUpdateActualKeyDateTime(LocalDateTime.now());

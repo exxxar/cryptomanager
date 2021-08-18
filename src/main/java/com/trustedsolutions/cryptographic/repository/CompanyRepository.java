@@ -10,9 +10,11 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.data.domain.Page;
+import org.springframework.data.jpa.repository.Query;
 
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.repository.query.Param;
 
 @EntityScan(basePackages = {"com.trustedsolutions.cryptographic.model"})
 public interface CompanyRepository extends PagingAndSortingRepository<Company, Long> {
@@ -22,4 +24,11 @@ public interface CompanyRepository extends PagingAndSortingRepository<Company, L
     @Override
     Page<Company> findAll(Pageable p);
 
+//    //@Query(value = "SELECT * FROM company WHERE id = :id or name LIKE %:name% or active = :active", nativeQuery = true)
+//    Page<Company> findByNameContainingIgnoreCase(
+//            @Param("name") String name,
+//            Pageable p);
+
+    @Query(value = "SELECT e FROM Company as e WHERE e.id=:id or (e.name LIKE %:inputString%) or (e.description LIKE %:inputString%)")
+    Page<Company> findAllByInputString(Long id, @Param("inputString") String inputString, Pageable pageable);
 }
