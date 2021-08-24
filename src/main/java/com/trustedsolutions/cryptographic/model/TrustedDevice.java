@@ -2,6 +2,7 @@ package com.trustedsolutions.cryptographic.model;
 
 import com.core.cryptolib.forms.TrustedDeviceForm;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.trustedsolutions.cryptographic.services.SettingsService;
 import java.io.Serializable;
 import java.time.LocalDate;
 import org.hibernate.annotations.CreationTimestamp;
@@ -13,8 +14,10 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import org.hibernate.annotations.Formula;
 import org.json.JSONException;
 import org.json.simple.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Entity
 public class TrustedDevice implements Serializable {
@@ -68,10 +71,20 @@ public class TrustedDevice implements Serializable {
     @Column(name = "update_date_time")
     private LocalDateTime updateDateTime;
 
-//       @ManyToMany(mappedBy = "trusted_devices")
-//    private Collection<Company> company;
     @ManyToMany(mappedBy = "trustedDevices")
     private Set<Company> companies;
+
+//    @Formula(value = "(select t.setting_value from settings t where t.setting_key = 'actualFirmware')")
+//    private String actualFirmware;
+//
+//    public boolean getActualFirmware() {
+//
+//        if (currentFirmware == null || actualFirmware == null) {
+//            return false;
+//        }
+//
+//        return this.currentFirmware.equals(actualFirmware);
+//    }
 
     public TrustedDevice(TrustedDeviceForm tdForm) {
         setTrustedDevice(tdForm);

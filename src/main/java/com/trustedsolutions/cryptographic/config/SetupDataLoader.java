@@ -60,7 +60,6 @@ public class SetupDataLoader implements
         }
 
         if (settingsService.getSettingsCount() == 0) {
-           
             settingsService.put("actualFirmware", "");
             settingsService.put("previousFirmware", "");
             settingsService.put("pathFirmware", "");

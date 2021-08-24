@@ -10,9 +10,11 @@ import com.trustedsolutions.cryptographic.forms.CompanyTrdustedDeviceAssignForm;
 import com.trustedsolutions.cryptographic.forms.UserCheckForm;
 import com.trustedsolutions.cryptographic.model.Company;
 import com.trustedsolutions.cryptographic.model.TrustedDevice;
+import com.trustedsolutions.cryptographic.model.User;
 import com.trustedsolutions.cryptographic.repository.CompanyRepository;
 
 import com.trustedsolutions.cryptographic.repository.TrustedDeviceRepository;
+import com.trustedsolutions.cryptographic.repository.UserRepository;
 import com.trustedsolutions.cryptographic.services.ParameterStringBuilder;
 import org.springframework.data.domain.Pageable;
 import java.io.BufferedReader;
@@ -61,6 +63,10 @@ public class CompaniesController {
 
     @Autowired
     TrustedDeviceRepository trustedDeviceRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
 
     /*
     
@@ -221,6 +227,23 @@ public class CompaniesController {
         }
 
         return new ResponseEntity<>(company, HttpStatus.OK);
+    }
+
+    @Secured("ROLE_ADMIN")
+    @RequestMapping(value = "/companies/{companyId:[0-9]{1,100}}/owner",
+            method = RequestMethod.GET,
+            headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
+    @ResponseBody
+    public ResponseEntity<Object> owner(@PathVariable Long companyId) {
+
+        System.out.println("ID=>" + companyId);
+
+        User user = userRepository.findByCompanyId(companyId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                messageSource.getMessage("http.status.code.404",
+                        null, LocaleContextHolder.getLocale())
+        ));
+
+        return new ResponseEntity<>(user, HttpStatus.OK);
     }
 
     @Secured("ROLE_ADMIN")

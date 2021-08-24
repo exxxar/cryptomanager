@@ -14,6 +14,8 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 public interface UserRepository extends PagingAndSortingRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
+    
+    Optional<User> findByCompanyId(Long cpmpanyId);
 
     @Override
     Page<User> findAll(Pageable p);

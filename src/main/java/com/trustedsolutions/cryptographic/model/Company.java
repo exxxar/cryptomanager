@@ -227,4 +227,7 @@ public class Company implements Serializable {
         this.callbackUrl = callbackUrl;
     }
 
+
+
+    
 }

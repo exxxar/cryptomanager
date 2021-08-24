@@ -123,7 +123,10 @@ public class TrustedDeviceController {
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
     @ResponseBody
     public ResponseEntity<Object> freeDevices(Pageable pageable) {
-        return new ResponseEntity<>(tdRepository.allFreeDevices(pageable), HttpStatus.OK);
+     
+        return new ResponseEntity<>(tdRepository.findAllFreeDevices(pageable), HttpStatus.OK);
+       
+      
     }
 
     @Secured("ROLE_ADMIN")
@@ -190,10 +193,10 @@ public class TrustedDeviceController {
 
         TrustedDevice tdAdded = (TrustedDevice) tdRepository.save(td);
 
-        JSONObject obj = new JSONObject();
-        obj.put("id", tdAdded.getId());
+//        JSONObject obj = new JSONObject();
+//        obj.put("id", tdAdded.getId());
 
-        return new ResponseEntity<>(obj, HttpStatus.OK);
+        return new ResponseEntity<>(tdAdded, HttpStatus.OK);
     }
 
     @Secured("ROLE_ADMIN")
