@@ -1,9 +1,13 @@
 package com.trustedsolutions.cryptographic.controller;
 
 import com.trustedsolutions.cryptographic.exception.BadRequestException;
+import com.trustedsolutions.cryptographic.exception.ResourceNotFoundException;
 import com.trustedsolutions.cryptographic.exception.TokenRefreshException;
+import com.trustedsolutions.cryptographic.forms.PasswordForm;
+import com.trustedsolutions.cryptographic.forms.ResetPasswordForm;
 import com.trustedsolutions.cryptographic.model.AuthProvider;
 import com.trustedsolutions.cryptographic.model.Company;
+import com.trustedsolutions.cryptographic.model.PasswordResetToken;
 import com.trustedsolutions.cryptographic.model.RefreshToken;
 import com.trustedsolutions.cryptographic.model.Role;
 import com.trustedsolutions.cryptographic.model.User;
@@ -15,6 +19,7 @@ import com.trustedsolutions.cryptographic.payload.SignUpRequest;
 import com.trustedsolutions.cryptographic.payload.TokenRefreshRequest;
 import com.trustedsolutions.cryptographic.payload.TokenRefreshResponse;
 import com.trustedsolutions.cryptographic.repository.CompanyRepository;
+import com.trustedsolutions.cryptographic.repository.PasswordResetTokenRepository;
 import com.trustedsolutions.cryptographic.repository.RoleRepository;
 import com.trustedsolutions.cryptographic.repository.UserRepository;
 import com.trustedsolutions.cryptographic.security.CurrentUser;
@@ -36,13 +41,26 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import javax.validation.Valid;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.UUID;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.json.simple.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
 import org.springframework.security.access.annotation.Secured;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
+
+    @Value("${app.client.url}")
+    private String appClientUrl;
 
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -71,6 +89,34 @@ public class AuthController {
     @Autowired
     RefreshTokenService refreshTokenService;
 
+    @Autowired
+    private PasswordResetTokenRepository passwordTokenRepository;
+
+    @PostMapping("/simple-reset")
+    public ResponseEntity<Object> simpleReset(@Valid @RequestBody ResetPasswordForm resetPasswordForm) {
+
+        User user = userRepository.findByEmail(resetPasswordForm.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                "Email not found!")
+                );;
+
+        String tmpPassword = UUID.randomUUID().toString();
+        String password = passwordEncoder.encode(tmpPassword);
+
+        user.setPassword(password);
+        userRepository.save(user);
+
+        emailService.sendSimpleMessage(resetPasswordForm.getEmail(), "reset password",
+                "new password: " + tmpPassword);
+
+        JSONObject obj = new JSONObject();
+        obj.put("code", HttpStatus.OK);
+        obj.put("detail", "Password reset success");
+        obj.put("title", "Reset password");
+
+        return new ResponseEntity<>(obj, HttpStatus.OK);
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
 
@@ -92,7 +138,8 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignUpRequest signUpRequest) {
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            throw new BadRequestException("Email address already in use.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Email not found!");
         }
 
         // Creating user's account
@@ -108,7 +155,7 @@ public class AuthController {
         user.setRoles(roles);
         Company company = new Company();
         company.setActive(true);
-        company.setCompanyName(signUpRequest.getName());
+        company.setName(signUpRequest.getName());
         company.setDescription("");
         company.setUserCheckUrl("");
         company = companyRepository.save(company);
@@ -150,7 +197,112 @@ public class AuthController {
     @Secured({"ROLE_USER", "ROLE_ADMIN"})
     public ResponseEntity<?> logoutUser(@CurrentUser UserPrincipal userPrincipal) {
         refreshTokenService.deleteByUserId(userPrincipal.getId());
-        return new ResponseEntity<>(null, HttpStatus.NO_CONTENT);
+
+        JSONObject obj = new JSONObject();
+        obj.put("code", HttpServletResponse.SC_OK);
+        obj.put("detail", "Logout success");
+        obj.put("title", "Logout");
+
+        return new ResponseEntity<>(obj, HttpStatus.OK);
     }
 
+    @PostMapping("/reset")
+    public ResponseEntity<?> resetPassword(final HttpServletRequest request, @Valid @RequestBody ResetPasswordForm resetPasswordForm) {
+        User user = userRepository.findByEmail(resetPasswordForm.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                "Email not found!")
+                );
+
+        final String token = UUID.randomUUID().toString();
+        final PasswordResetToken myToken = new PasswordResetToken(token, user);
+        passwordTokenRepository.save(myToken);
+
+        final String url = settingsService.get("appClientUrl", appClientUrl) + "/reset/change?token=" + token;
+
+        emailService.sendSimpleMessage(user.getEmail(), "Reset password", url);
+
+        JSONObject obj = new JSONObject();
+        obj.put("code", HttpServletResponse.SC_OK);
+        obj.put("detail", "Reset password send success");
+        obj.put("title", "Reset password");
+
+        return new ResponseEntity<>(obj, HttpStatus.OK);
+    }
+
+    // Save password
+    @PostMapping("/reset/save")
+    public ResponseEntity<?> savePassword(@RequestBody PasswordForm passwordDto) {
+
+        PasswordResetToken passToken = passwordTokenRepository.findByToken(passwordDto.getToken());
+
+        if (passToken == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Token not valid!");
+        }
+        User user = passToken.getUser();
+
+        if (!isValidateResetToken(passToken.getToken())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Token not valid!");
+        }
+
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "User not found!");
+        }
+
+        String password = passwordEncoder.encode(passwordDto.getNewPassword());
+
+        user.setPassword(password);
+        userRepository.save(user);
+
+        JSONObject obj = new JSONObject();
+        obj.put("code", HttpServletResponse.SC_OK);
+        obj.put("detail", "Change password success");
+        obj.put("title", "Change password");
+
+        return new ResponseEntity<>(obj, HttpStatus.OK);
+    }
+
+    @Secured({"ROLE_USER", "ROLE_ADMIN"})
+    @PostMapping("/reset/update")
+    public ResponseEntity<?> changeUserPassword(@CurrentUser UserPrincipal userPrincipal, @RequestBody PasswordForm passwordDto) {
+        User user = userRepository.findByEmail(userPrincipal.getEmail()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                "Email not found!")
+        );
+
+        if (!passwordEncoder.matches(passwordDto.getOldPassword(), user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                    "Bad old password!");
+        }
+
+        user.setPassword(passwordDto.getNewPassword());
+        userRepository.save(user);
+
+        JSONObject obj = new JSONObject();
+        obj.put("code", HttpServletResponse.SC_OK);
+        obj.put("detail", "Change password success");
+        obj.put("title", "Change password");
+
+        return new ResponseEntity<>(obj, HttpStatus.OK);
+    }
+
+    private boolean isValidateResetToken(String token) {
+        final PasswordResetToken verificationToken = passwordTokenRepository.findByToken(token);
+        if (verificationToken == null) {
+            return false;
+        }
+
+        final Calendar cal = Calendar.getInstance();
+        if ((verificationToken.getExpiryDate()
+                .getTime() - cal.getTime()
+                        .getTime()) <= 0) {
+            passwordTokenRepository.delete(verificationToken);
+            return false;
+        }
+
+        passwordTokenRepository.delete(verificationToken);
+
+        return true;
+    }
 }

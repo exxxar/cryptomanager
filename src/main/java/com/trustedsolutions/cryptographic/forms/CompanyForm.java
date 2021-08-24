@@ -5,6 +5,7 @@
  */
 package com.trustedsolutions.cryptographic.forms;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
@@ -18,7 +19,7 @@ public class CompanyForm {
 
     @NotNull
     @Size(min = 1, max = 255)
-    private String companyName;
+    private String name;
 
     @NotNull
     @Size(min = 1, max = 255)
@@ -32,6 +33,7 @@ public class CompanyForm {
     @Size(min = 1, max = 255)
     private String userCheckUrl;
 
+    @JsonProperty
     @NotNull
     private boolean active;
 
@@ -43,12 +45,12 @@ public class CompanyForm {
         this.id = id;
     }
 
-    public String getCompanyName() {
-        return companyName;
+    public String getName() {
+        return name;
     }
 
-    public void setCompanyName(String companyName) {
-        this.companyName = companyName;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getDescription() {
@@ -75,7 +77,7 @@ public class CompanyForm {
         this.userCheckUrl = userCheckUrl;
     }
 
-    public boolean isActive() {
+    public boolean getActive() {
         return active;
     }
 

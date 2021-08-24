@@ -93,6 +93,19 @@ public class SettingsService {
 
     }
 
+    public Setting get(String key, String defaultValue) {
+
+        Setting st = settingRepository.findBySettingKey(key);
+        if (st == null) {
+            st = new Setting();
+            st.setKey(key);
+            st.setValue(defaultValue);
+            settingRepository.save(st);
+        }
+
+        return st;
+    }
+
     public Setting get(String key) {
 
         Setting st = settingRepository.findBySettingKey(key);

@@ -10,9 +10,11 @@ import com.trustedsolutions.cryptographic.forms.CompanyTrdustedDeviceAssignForm;
 import com.trustedsolutions.cryptographic.forms.UserCheckForm;
 import com.trustedsolutions.cryptographic.model.Company;
 import com.trustedsolutions.cryptographic.model.TrustedDevice;
+import com.trustedsolutions.cryptographic.model.User;
 import com.trustedsolutions.cryptographic.repository.CompanyRepository;
 
 import com.trustedsolutions.cryptographic.repository.TrustedDeviceRepository;
+import com.trustedsolutions.cryptographic.repository.UserRepository;
 import com.trustedsolutions.cryptographic.services.ParameterStringBuilder;
 import org.springframework.data.domain.Pageable;
 import java.io.BufferedReader;
@@ -36,6 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.data.domain.Page;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,6 +47,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -59,6 +63,10 @@ public class CompaniesController {
 
     @Autowired
     TrustedDeviceRepository trustedDeviceRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
 
     /*
     
@@ -101,14 +109,15 @@ public class CompaniesController {
     @ResponseBody
     public ResponseEntity<Object> update(@PathVariable Long companyId, @RequestBody CompanyForm companyForm) {
 
-        Company company = (Company) companyRepository.findCompanyById(companyId);
+        System.out.println("ID=>" + companyId);
+        System.out.println("CompanyForm=>" + companyForm.toString());
+        Company company = (Company) companyRepository.findById(companyId).orElseThrow(()
+                -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        messageSource.getMessage("http.status.code.404",
+                                null, LocaleContextHolder.getLocale())
+                )
+        );
 
-        if (company == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    messageSource.getMessage("http.status.code.404",
-                            null, LocaleContextHolder.getLocale())
-            );
-        }
         company.setCompany(companyForm);
 
         companyRepository.save(company);
@@ -123,14 +132,12 @@ public class CompaniesController {
     @ResponseBody
     public ResponseEntity<Object> checkUser(@RequestBody UserCheckForm userCheckForm) throws MalformedURLException, ProtocolException, IOException, ParseException {
 
-        Company company = companyRepository.findCompanyById(userCheckForm.getCompanyId());
-
-        if (company == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    messageSource.getMessage("http.status.code.404",
-                            null, LocaleContextHolder.getLocale())
-            );
-        }
+        Company company = companyRepository.findById(userCheckForm.getCompanyId()).orElseThrow(()
+                -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        messageSource.getMessage("http.status.code.404",
+                                null, LocaleContextHolder.getLocale())
+                )
+        );
 
         try {
             URL url = new URL(company.getUserCheckUrl());
@@ -183,8 +190,22 @@ public class CompaniesController {
             method = RequestMethod.GET,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
     @ResponseBody
-    public ResponseEntity<Object> companies(Pageable pageable) {
-        return new ResponseEntity<>(companyRepository.findAll(pageable), HttpStatus.OK);
+    public ResponseEntity<Object> companies(Pageable pageable,
+            @RequestParam(defaultValue = "-1") Long id,
+            @RequestParam(defaultValue = "") String filter
+    ) {
+
+        Page<Company> page;
+        if (id > 0 && !filter.isEmpty()) {
+            page = companyRepository.findAll(pageable);
+        } else {
+            page = companyRepository.findAllByInputString(
+                    id,
+                    filter,
+                    pageable);
+        }
+
+        return new ResponseEntity<>(page, HttpStatus.OK);
     }
 
     @Secured("ROLE_ADMIN")
@@ -193,6 +214,8 @@ public class CompaniesController {
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
     @ResponseBody
     public ResponseEntity<Object> get(@PathVariable Long companyId) {
+
+        System.out.println("ID=>" + companyId);
 
         Company company = companyRepository.findCompanyById(companyId);
 
@@ -204,6 +227,23 @@ public class CompaniesController {
         }
 
         return new ResponseEntity<>(company, HttpStatus.OK);
+    }
+
+    @Secured("ROLE_ADMIN")
+    @RequestMapping(value = "/companies/{companyId:[0-9]{1,100}}/owner",
+            method = RequestMethod.GET,
+            headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
+    @ResponseBody
+    public ResponseEntity<Object> owner(@PathVariable Long companyId) {
+
+        System.out.println("ID=>" + companyId);
+
+        User user = userRepository.findByCompanyId(companyId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                messageSource.getMessage("http.status.code.404",
+                        null, LocaleContextHolder.getLocale())
+        ));
+
+        return new ResponseEntity<>(user, HttpStatus.OK);
     }
 
     @Secured("ROLE_ADMIN")

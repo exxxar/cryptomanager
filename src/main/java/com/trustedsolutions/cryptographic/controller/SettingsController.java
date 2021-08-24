@@ -131,6 +131,19 @@ public class SettingsController {
     }
 
     @Secured("ROLE_ADMIN")
+    @RequestMapping(value = "/settings/firmware",
+            method = RequestMethod.GET,
+            headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
+    @ResponseBody
+    public ResponseEntity<Object> getActualFirmware() throws ParseException, UnsupportedEncodingException, NoSuchAlgorithmException, IllegalBlockSizeException, InvalidKeyException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeySpecException, IOException {
+
+        JSONObject obj = new JSONObject();
+        obj.put("firmware", settingsService.get("actualFirmware").getValue());
+
+        return new ResponseEntity<>(obj, HttpStatus.OK);
+    }
+
+    @Secured("ROLE_ADMIN")
     @RequestMapping(value = "/settings/update",
             method = RequestMethod.POST,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
@@ -289,7 +302,6 @@ public class SettingsController {
         obj.put("path", path.toAbsolutePath().toString());
         obj.put("name", path.getFileName().toString());
 
-        
         return new ResponseEntity<>(obj, HttpStatus.OK);
     }
 }
