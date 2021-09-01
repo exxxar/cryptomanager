@@ -3,18 +3,23 @@ package com.trustedsolutions.cryptographic.controller;
 import com.trustedsolutions.cryptographic.exception.ResourceNotFoundException;
 import com.trustedsolutions.cryptographic.forms.CompanyForm;
 import com.trustedsolutions.cryptographic.forms.UserRoleForm;
+import com.trustedsolutions.cryptographic.forms.UserSelfUpdateForm;
 import com.trustedsolutions.cryptographic.model.Company;
 import com.trustedsolutions.cryptographic.model.Role;
+import com.trustedsolutions.cryptographic.model.TrustedDevice;
 import com.trustedsolutions.cryptographic.model.User;
 import com.trustedsolutions.cryptographic.repository.RoleRepository;
+import com.trustedsolutions.cryptographic.repository.TrustedDeviceRepository;
 import com.trustedsolutions.cryptographic.repository.UserRepository;
 import com.trustedsolutions.cryptographic.security.CurrentUser;
 import com.trustedsolutions.cryptographic.security.UserPrincipal;
 import java.util.ArrayList;
 import java.util.List;
+import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -40,11 +45,71 @@ public class UserController {
     @Autowired
     private RoleRepository roleRepository;
 
+    @Autowired
+    TrustedDeviceRepository trustedDeviceRepository;
+
     @GetMapping("/user/me")
-    @Secured("ROLE_USER")
+    @Secured({"ROLE_USER", "ROLE_ADMIN"})
     public User getCurrentUser(@CurrentUser UserPrincipal userPrincipal) {
         return userRepository.findById(userPrincipal.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userPrincipal.getId()));
+    }
+
+    @Secured({"ROLE_USER", "ROLE_ADMIN"})
+    @RequestMapping(value = "/user/me",
+            method = RequestMethod.PUT,
+            headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
+    @ResponseBody
+    public ResponseEntity<Object> selfUpdate(@CurrentUser UserPrincipal userPrincipal, @RequestBody @Valid UserSelfUpdateForm userSelfUpdateForm) {
+
+        User user = userRepository.findById(userPrincipal.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userPrincipal.getId()));
+
+        if (userSelfUpdateForm.getEmail() != null) {
+            user.setEmail(userSelfUpdateForm.getEmail());
+        }
+
+        if (userSelfUpdateForm.getImageUrl() != null) {
+            user.setImageUrl(userSelfUpdateForm.getImageUrl());
+        }
+
+        if (userSelfUpdateForm.getPassword() != null && userSelfUpdateForm.getConfirmPassword() != null) {
+
+            user.setPassword(userSelfUpdateForm.getPassword());
+        }
+
+        if (userSelfUpdateForm.getName() != null) {
+            user.setName(userSelfUpdateForm.getName());
+        }
+
+        user.setEnabled(userSelfUpdateForm.getEnabled());
+
+        user = userRepository.save(user);
+
+        return new ResponseEntity<>(user, HttpStatus.OK);
+    }
+
+    @Secured({"ROLE_USER", "ROLE_ADMIN"})
+    @RequestMapping(value = "/user/devices",
+            method = RequestMethod.GET,
+            headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
+    @ResponseBody
+    public ResponseEntity<Object> devices(@CurrentUser UserPrincipal userPrincipal, Pageable pageable) {
+
+        User user = userRepository.findById(userPrincipal.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userPrincipal.getId()));
+
+        boolean isAdmin = false;
+
+        for (Role role : user.getRoles()) {
+            if (role.getName().equals("ROLE_ADMIN")) {
+                isAdmin = true;
+            }
+        }
+
+        return new ResponseEntity<>(isAdmin
+                ? trustedDeviceRepository.findAllDevicesByCompanyId(user.getCompany().getId(), pageable)
+                : trustedDeviceRepository.findAllDevicesByCompanyIdForUser(user.getCompany().getId(), pageable), HttpStatus.OK);
     }
 
     @Secured("ROLE_ADMIN")
@@ -88,7 +153,7 @@ public class UserController {
         );
 
         List<Role> roles = new ArrayList<>();
-        
+
         for (Long id : userRoleForm.getRoleIds()) {
             Role role = roleRepository.findById(id).orElseThrow(()
                     -> new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -96,14 +161,14 @@ public class UserController {
                                     null, LocaleContextHolder.getLocale())
                     )
             );
-            
+
             roles.add(role);
 
         }
 
         user.setRoles(roles);
         userRepository.save(user);
-        
+
         return new ResponseEntity<>(user, HttpStatus.OK);
     }
 

@@ -5,16 +5,20 @@
  */
 package com.trustedsolutions.cryptographic.controller;
 
+import com.trustedsolutions.cryptographic.exception.ResourceNotFoundException;
 import com.trustedsolutions.cryptographic.forms.CompanyForm;
 import com.trustedsolutions.cryptographic.forms.CompanyTrdustedDeviceAssignForm;
 import com.trustedsolutions.cryptographic.forms.UserCheckForm;
 import com.trustedsolutions.cryptographic.model.Company;
+import com.trustedsolutions.cryptographic.model.Role;
 import com.trustedsolutions.cryptographic.model.TrustedDevice;
 import com.trustedsolutions.cryptographic.model.User;
 import com.trustedsolutions.cryptographic.repository.CompanyRepository;
 
 import com.trustedsolutions.cryptographic.repository.TrustedDeviceRepository;
 import com.trustedsolutions.cryptographic.repository.UserRepository;
+import com.trustedsolutions.cryptographic.security.CurrentUser;
+import com.trustedsolutions.cryptographic.security.UserPrincipal;
 import com.trustedsolutions.cryptographic.services.ParameterStringBuilder;
 import org.springframework.data.domain.Pageable;
 import java.io.BufferedReader;
@@ -30,6 +34,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import javax.validation.Valid;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -94,7 +99,7 @@ public class CompaniesController {
             method = RequestMethod.POST,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
     @ResponseBody
-    public ResponseEntity<Object> add(@RequestBody CompanyForm companyForm) {
+    public ResponseEntity<Object> add(@Valid @RequestBody CompanyForm companyForm) {
 
         Company company = new Company(companyForm);
         company = (Company) companyRepository.save(company);
@@ -107,7 +112,7 @@ public class CompaniesController {
             method = RequestMethod.PUT,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
     @ResponseBody
-    public ResponseEntity<Object> update(@PathVariable Long companyId, @RequestBody CompanyForm companyForm) {
+    public ResponseEntity<Object> update(@PathVariable Long companyId, @Valid @RequestBody CompanyForm companyForm) {
 
         System.out.println("ID=>" + companyId);
         System.out.println("CompanyForm=>" + companyForm.toString());
@@ -126,11 +131,35 @@ public class CompaniesController {
     }
 
     @Secured({"ROLE_USER", "ROLE_ADMIN"})
+    @RequestMapping(value = "/companies/update/self",
+            method = RequestMethod.PUT,
+            headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
+    @ResponseBody
+    public ResponseEntity<Object> selfUpdate(@CurrentUser UserPrincipal userPrincipal, @Valid @RequestBody CompanyForm companyForm) {
+
+        User user = userRepository.findById(userPrincipal.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userPrincipal.getId()));
+
+        Company company = (Company) companyRepository.findById(user.getCompany().getId()).orElseThrow(()
+                -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        messageSource.getMessage("http.status.code.404",
+                                null, LocaleContextHolder.getLocale())
+                )
+        );
+
+        company.setCompany(companyForm);
+
+        companyRepository.save(company);
+
+        return new ResponseEntity<>(company, HttpStatus.OK);
+    }
+
+    @Secured({"ROLE_USER", "ROLE_ADMIN"})
     @RequestMapping(value = "/companies/user_check",
             method = RequestMethod.POST,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
     @ResponseBody
-    public ResponseEntity<Object> checkUser(@RequestBody UserCheckForm userCheckForm) throws MalformedURLException, ProtocolException, IOException, ParseException {
+    public ResponseEntity<Object> checkUser(@Valid @RequestBody UserCheckForm userCheckForm) throws MalformedURLException, ProtocolException, IOException, ParseException {
 
         Company company = companyRepository.findById(userCheckForm.getCompanyId()).orElseThrow(()
                 -> new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -236,8 +265,6 @@ public class CompaniesController {
     @ResponseBody
     public ResponseEntity<Object> owner(@PathVariable Long companyId) {
 
-        System.out.println("ID=>" + companyId);
-
         User user = userRepository.findByCompanyId(companyId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                 messageSource.getMessage("http.status.code.404",
                         null, LocaleContextHolder.getLocale())
@@ -251,18 +278,18 @@ public class CompaniesController {
             method = RequestMethod.GET,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
     @ResponseBody
-    public ResponseEntity<Object> devices(@PathVariable Long companyId) {
+    public ResponseEntity<Object> devices(@PathVariable Long companyId, Pageable pageable) {
 
-        Company company = companyRepository.findCompanyById(companyId);
+        Page<TrustedDevice> td = trustedDeviceRepository.findAllDevicesByCompanyId(companyId, pageable);
 
-        if (company == null) {
+        if (td == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     messageSource.getMessage("http.status.code.404",
                             null, LocaleContextHolder.getLocale())
             );
         }
 
-        return new ResponseEntity<>(company.getTrustedDevices(), HttpStatus.OK);
+        return new ResponseEntity<>(td, HttpStatus.OK);
     }
 
     @Secured("ROLE_ADMIN")
@@ -318,7 +345,7 @@ public class CompaniesController {
             method = RequestMethod.POST,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
     @ResponseBody
-    public ResponseEntity<Object> attach(@RequestBody CompanyTrdustedDeviceAssignForm companyTrdustedDeviceAssignForm) {
+    public ResponseEntity<Object> attach(@Valid @RequestBody CompanyTrdustedDeviceAssignForm companyTrdustedDeviceAssignForm) {
 
         Company company = companyRepository.findCompanyById(companyTrdustedDeviceAssignForm.getCompanyId());
 
@@ -350,7 +377,7 @@ public class CompaniesController {
             method = RequestMethod.POST,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
     @ResponseBody
-    public ResponseEntity<Object> detach(@RequestBody CompanyTrdustedDeviceAssignForm companyTrdustedDeviceAssignForm) {
+    public ResponseEntity<Object> detach(@Valid @RequestBody CompanyTrdustedDeviceAssignForm companyTrdustedDeviceAssignForm) {
 
         Company company = companyRepository.findCompanyById(companyTrdustedDeviceAssignForm.getCompanyId());
 

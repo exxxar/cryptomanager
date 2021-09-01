@@ -9,6 +9,7 @@ import com.core.cryptolib.EncryptService;
 import com.core.cryptolib.CryptoLoggerService;
 import com.core.cryptolib.UserPayloadServiceForCrypt;
 import com.core.cryptolib.enums.InfoRequestType;
+import com.core.cryptolib.enums.ObjectType;
 import com.core.cryptolib.forms.InfoRequestForm;
 import com.core.cryptolib.forms.ResponseTDPublicIdForm;
 import com.core.cryptolib.forms.TransferDataForm;
@@ -17,6 +18,11 @@ import com.core.cryptolib.forms.TrustedDeviceForm;
 
 import com.trustedsolutions.cryptographic.model.TrustedDevice;
 import com.trustedsolutions.cryptographic.repository.TrustedDeviceRepository;
+import com.trustedsolutions.cryptographic.security.CurrentUser;
+import com.trustedsolutions.cryptographic.security.UserPrincipal;
+import com.trustedsolutions.cryptographic.services.HistoryOperationService;
+import com.trustedsolutions.cryptographic.services.SettingsService;
+import java.io.IOException;
 
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidAlgorithmParameterException;
@@ -29,6 +35,7 @@ import javax.annotation.PostConstruct;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.validation.Valid;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -48,6 +55,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.apache.log4j.Logger;
 import org.springframework.data.domain.Pageable;
+import org.springframework.validation.BindingResult;
 
 @RestController
 public class TrustedDeviceController {
@@ -78,6 +86,12 @@ public class TrustedDeviceController {
     private int maxAttempts;
 
     CryptoLoggerService logger;
+
+    @Autowired
+    HistoryOperationService historyOperationService;
+
+    @Autowired
+    SettingsService settingsService;
 
     @PostConstruct
     public void initialize() {
@@ -122,11 +136,15 @@ public class TrustedDeviceController {
             method = RequestMethod.GET,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
     @ResponseBody
-    public ResponseEntity<Object> freeDevices(Pageable pageable) {
-     
+    public ResponseEntity<Object> freeDevices(@CurrentUser UserPrincipal userPrincipal, Pageable pageable) {
+
+        historyOperationService.setUserId(userPrincipal.getId());
+        historyOperationService.setDescription("Get free devices");
+        historyOperationService.setType(ObjectType.TRUSTED_DEVICE);
+        historyOperationService.store();
+
         return new ResponseEntity<>(tdRepository.findAllFreeDevices(pageable), HttpStatus.OK);
-       
-      
+
     }
 
     @Secured("ROLE_ADMIN")
@@ -145,7 +163,6 @@ public class TrustedDeviceController {
     @ResponseBody
     public ResponseEntity<Object> get(@PathVariable Long tdId) {
 
-        System.out.println("ID=>" + tdId);
         TrustedDevice td = tdRepository.findById(tdId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                 messageSource.getMessage("http.status.code.404",
                         null, LocaleContextHolder.getLocale())
@@ -159,9 +176,14 @@ public class TrustedDeviceController {
             method = RequestMethod.DELETE,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
     @ResponseBody
-    public ResponseEntity<Object> remove(@PathVariable Long tdId) {
+    public ResponseEntity<Object> remove(@CurrentUser UserPrincipal userPrincipal, @PathVariable Long tdId) {
 
         TrustedDevice td = tdRepository.findTrustedDeviceById(tdId);
+
+        historyOperationService.setBefore(td.toJSON());
+        historyOperationService.setUserId(userPrincipal.getId());
+        historyOperationService.setDescription("Remove trusted device");
+        historyOperationService.setType(ObjectType.TRUSTED_DEVICE);
 
         if (td == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -172,6 +194,8 @@ public class TrustedDeviceController {
 
         tdRepository.delete(td);
 
+        historyOperationService.store();
+
         return new ResponseEntity<>(td, HttpStatus.OK);
     }
 
@@ -180,7 +204,25 @@ public class TrustedDeviceController {
             method = RequestMethod.POST,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
     @ResponseBody
-    public ResponseEntity<Object> add(@RequestBody TrustedDeviceForm trustedDevice) {
+    public ResponseEntity<Object> add(@CurrentUser UserPrincipal userPrincipal, @RequestBody @Valid TrustedDeviceForm trustedDevice, BindingResult bindingResult) {
+
+        if (bindingResult.hasErrors()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    messageSource.getMessage("http.status.code.400",
+                            null, LocaleContextHolder.getLocale())
+            );
+        }
+
+        historyOperationService.setUserId(userPrincipal.getId());
+        historyOperationService.setDescription("Add trusted device");
+        historyOperationService.setType(ObjectType.TRUSTED_DEVICE);
+
+        if (tdRepository.findTrustedDeviceByDevicePublicId(trustedDevice.getDevicePublicId()) != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    messageSource.getMessage("http.status.code.400",
+                            null, LocaleContextHolder.getLocale())
+            );
+        }
 
         TrustedDevice td = new TrustedDevice(trustedDevice);
 
@@ -193,8 +235,8 @@ public class TrustedDeviceController {
 
         TrustedDevice tdAdded = (TrustedDevice) tdRepository.save(td);
 
-//        JSONObject obj = new JSONObject();
-//        obj.put("id", tdAdded.getId());
+        historyOperationService.setObjectId(tdAdded.getId());
+        historyOperationService.store(tdAdded.toJSON());
 
         return new ResponseEntity<>(tdAdded, HttpStatus.OK);
     }
@@ -204,7 +246,14 @@ public class TrustedDeviceController {
             method = RequestMethod.PUT,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
     @ResponseBody
-    public ResponseEntity<Object> update(@RequestBody TrustedDeviceForm trustedDevice) {
+    public ResponseEntity<Object> update(@CurrentUser UserPrincipal userPrincipal, @RequestBody @Valid TrustedDeviceForm trustedDevice, BindingResult bindingResult) {
+
+        if (bindingResult.hasErrors()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    messageSource.getMessage("http.status.code.400",
+                            null, LocaleContextHolder.getLocale())
+            );
+        }
 
         TrustedDevice td = tdRepository.findTrustedDeviceById(trustedDevice.getId());
 
@@ -215,9 +264,17 @@ public class TrustedDeviceController {
             );
         }
 
+        historyOperationService.setBefore(td.toJSON());
+        historyOperationService.setUserId(userPrincipal.getId());
+        historyOperationService.setDescription("Update trusted device");
+        historyOperationService.setType(ObjectType.TRUSTED_DEVICE);
+
         td.setTrustedDevice(trustedDevice);
 
-        tdRepository.save(td);
+        td = tdRepository.save(td);
+
+        historyOperationService.setObjectId(td.getId());
+        historyOperationService.store(td.toJSON());
 
         return new ResponseEntity<>(td, HttpStatus.OK);
     }
@@ -264,13 +321,13 @@ public class TrustedDeviceController {
             method = RequestMethod.POST,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
     @ResponseBody
-    public ResponseEntity<Object> reencrypt(@RequestBody InfoRequestForm infoRequestForm) throws ParseException, UnsupportedEncodingException, InvalidKeyException, InvalidKeySpecException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException {
+    public ResponseEntity<Object> reencrypt(@RequestBody InfoRequestForm infoRequestForm) throws ParseException, UnsupportedEncodingException, InvalidKeyException, InvalidKeySpecException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, IOException {
 
         this.logger.info("start reencrypt!");
 
         byte[] decrypted_data = Base64.getDecoder().decode(infoRequestForm.getData().getBytes());
 
-        UserPayloadServiceForCrypt ups = new UserPayloadServiceForCrypt();
+        UserPayloadServiceForCrypt ups = new UserPayloadServiceForCrypt(settingsService.getAllSettings());
 
         JSONObject tmp = null;
         try {
@@ -325,20 +382,28 @@ public class TrustedDeviceController {
 
                 byte[] recipientDeviceNewKey = EncryptService.getSecureRandom(8);
 
+                byte[] recipientDeviceResetKey = EncryptService.getSecureRandom(8);
+
+                byte[] senderDeviceResetKey = EncryptService.getSecureRandom(8);
+
                 tdfWdi = ups.twiceEncryptedPermissionEnd(
                         tdRecipient.toTrustedDeviceForm(),
                         tdSender.toTrustedDeviceForm(),
                         senderDeviceNewKey,
                         recipientDeviceNewKey,
+                        recipientDeviceResetKey,
+                        senderDeviceResetKey,
                         maxAttempts
                 );
 
                 tdf = tdfWdi.getTdf();
 
                 tdRecipient.setAttempts(tdfWdi.getRecipient().getAttempts());
+                tdRecipient.setCurrentFirmware(tdfWdi.getRecipient().getCurrentFirmware());
                 tdRepository.save(tdRecipient);
 
                 tdSender.setAttempts(tdfWdi.getSender().getAttempts());
+                tdSender.setCurrentFirmware(tdfWdi.getSender().getCurrentFirmware());
                 tdRepository.save(tdSender);
 
                 if (tdf.getType() == InfoRequestType.denial.getValue()) {
@@ -357,16 +422,20 @@ public class TrustedDeviceController {
                 logger.info("reencrypt step6");
 
                 byte[] tmp_recipient_actual_key = tdRecipient.getDeviceActualKey();
+                byte[] tmp_recipient_reset_key = tdRecipient.getDeviceResetKey();
                 byte[] tmp_sender_actual_key = tdSender.getDeviceActualKey();
+                byte[] tmp_sender_reset_key = tdSender.getDeviceResetKey();
 
                 tdRecipient.setDeviceActualKeyEncode(recipientDeviceNewKey);
                 tdRecipient.setDeviceOldKeyEncode(tmp_recipient_actual_key);
+                tdRecipient.setDeviceResetKeyEncode(tmp_recipient_reset_key);
                 tdRecipient.setLastUpdateActualKeyDateTime(LocalDateTime.now());
                 tdRecipient.setAttempts(0);
                 tdRepository.save(tdRecipient);
 
                 tdSender.setDeviceActualKeyEncode(senderDeviceNewKey);
                 tdSender.setDeviceOldKeyEncode(tmp_sender_actual_key);
+                tdSender.setDeviceResetKeyEncode(tmp_sender_reset_key);
                 tdSender.setLastUpdateActualKeyDateTime(LocalDateTime.now());
                 tdSender.setAttempts(0);
                 tdRepository.save(tdSender);
@@ -388,6 +457,8 @@ public class TrustedDeviceController {
         }
 
         logger.info("reencrypt step11");
+
+        settingsService.sync(ups.getSettings());
 
         infoRequestForm.setData(Base64
                 .getEncoder()
