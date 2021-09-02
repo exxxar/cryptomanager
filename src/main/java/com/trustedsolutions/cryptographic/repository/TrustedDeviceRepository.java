@@ -1,8 +1,11 @@
 package com.trustedsolutions.cryptographic.repository;
 
+
+import com.trustedsolutions.cryptographic.forms.iTrustedDeviceProjection;
 import com.trustedsolutions.cryptographic.model.Company;
 import com.trustedsolutions.cryptographic.model.TrustedDevice;
 import java.util.List;
+import java.util.Map;
 import org.json.simple.JSONObject;
 
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -39,6 +42,6 @@ public interface TrustedDeviceRepository extends PagingAndSortingRepository<Trus
     Page<TrustedDevice> findAllDevicesByCompanyId(@Param("companyId") Long companyId, Pageable pageable);
 
     @Query(value = "SELECT `id`,`active`,`attempts`,`current_firmware`,`description`,`last_update_actual_key_date_time`,`device_public_id`,`create_date_time`  FROM `trusted_device` INNER JOIN `company_trusted_devices` ON (`company_trusted_devices`.`trusted_devices_id` = `trusted_device`.`id`) WHERE `company_trusted_devices`.`companies_id`=:companyId", nativeQuery = true)
-    Page<JSONObject> findAllDevicesByCompanyIdForUser(@Param("companyId") Long companyId, Pageable pageable);
+    Page<iTrustedDeviceProjection> findAllDevicesByCompanyIdForUser(@Param("companyId") Long companyId, Pageable pageable);
 
 }

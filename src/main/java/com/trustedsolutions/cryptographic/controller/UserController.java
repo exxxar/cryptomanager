@@ -13,15 +13,22 @@ import com.trustedsolutions.cryptographic.repository.TrustedDeviceRepository;
 import com.trustedsolutions.cryptographic.repository.UserRepository;
 import com.trustedsolutions.cryptographic.security.CurrentUser;
 import com.trustedsolutions.cryptographic.security.UserPrincipal;
+import com.trustedsolutions.cryptographic.services.storage.FileSystemStorageService;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,9 +36,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 public class UserController {
@@ -47,6 +57,9 @@ public class UserController {
 
     @Autowired
     TrustedDeviceRepository trustedDeviceRepository;
+
+    @Autowired
+    FileSystemStorageService fileStorageService;
 
     @GetMapping("/user/me")
     @Secured({"ROLE_USER", "ROLE_ADMIN"})
@@ -73,20 +86,85 @@ public class UserController {
             user.setImageUrl(userSelfUpdateForm.getImageUrl());
         }
 
-        if (userSelfUpdateForm.getPassword() != null && userSelfUpdateForm.getConfirmPassword() != null) {
-
-            user.setPassword(userSelfUpdateForm.getPassword());
-        }
-
         if (userSelfUpdateForm.getName() != null) {
             user.setName(userSelfUpdateForm.getName());
         }
 
-        user.setEnabled(userSelfUpdateForm.getEnabled());
-
         user = userRepository.save(user);
 
         return new ResponseEntity<>(user, HttpStatus.OK);
+    }
+
+    @Secured({"ROLE_ADMIN", "ROLE_USER"})
+    @RequestMapping(value = "/user/me/avatar",
+            method = RequestMethod.POST,
+            headers = {"X-API-VERSION=0.0.3"})
+    @ResponseBody
+    public ResponseEntity<Object> uploadAvatar(@CurrentUser UserPrincipal userPrincipal, @RequestParam("file") MultipartFile file) {
+        String fileName = fileStorageService.storeFile(file);
+
+        String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/user/me/avatar")
+                .toUriString();
+
+        User user = userRepository.findById(userPrincipal.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userPrincipal.getId()));
+
+        user.setImageUrl(fileName);
+        userRepository.save(user);
+
+        JSONObject obj = new JSONObject();
+        obj.put("fileName", fileName);
+        obj.put("fileDownloadUri", fileDownloadUri);
+        obj.put("type", file.getContentType());
+        obj.put("size", file.getSize());
+
+        return new ResponseEntity<>(obj, HttpStatus.OK);
+    }
+
+    @Secured({"ROLE_ADMIN", "ROLE_USER"})
+    @RequestMapping(value = "/user/me/avatar",
+            method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity<Object> getAvatar(@CurrentUser UserPrincipal userPrincipal, HttpServletRequest request) {
+
+        User user = userRepository.findById(userPrincipal.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userPrincipal.getId()));
+
+        if (user.getImageUrl() == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    messageSource.getMessage("http.status.code.404",
+                            null, LocaleContextHolder.getLocale())
+            );
+        }
+
+        Resource resource = fileStorageService.loadFileAsResource(user.getImageUrl());
+
+        if (resource == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    messageSource.getMessage("http.status.code.404",
+                            null, LocaleContextHolder.getLocale())
+            );
+        }
+
+        // Try to determine file's content type
+        String contentType = null;
+        try {
+            contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
+        } catch (IOException ex) {
+
+        }
+
+        // Fallback to the default content type if type could not be determined
+        if (contentType == null) {
+            contentType = "application/octet-stream";
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
+
     }
 
     @Secured({"ROLE_USER", "ROLE_ADMIN"})

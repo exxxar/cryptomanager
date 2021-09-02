@@ -19,39 +19,13 @@ public class UserSelfUpdateForm {
 
     private String imageUrl;
 
-    private Boolean enabled;
+   
 
-    private String password;
 
-    private String confirmPassword;
-
-    public String getConfirmPassword() {
-        return confirmPassword;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-        checkPassword();//check
-    }
-
-    public void setConfirmPassword(String confirmPassword) {
-        this.confirmPassword = confirmPassword;
-        checkPassword();//check
-    }
-
-    private void checkPassword() {
-        if (this.password == null || this.confirmPassword == null) {
-            return;
-        } else if (!this.password.equals(confirmPassword)) {
-            this.confirmPassword = null;
-        }
-    }
-
-    public UserSelfUpdateForm(String name, String imageUrl, Boolean enabled, String password) {
+    public UserSelfUpdateForm(String name, String imageUrl, Boolean enabled) {
         this.name = name;
         this.imageUrl = imageUrl;
-        this.enabled = enabled;
-        this.password = password;
+     
     }
 
     public UserSelfUpdateForm() {
@@ -81,16 +55,6 @@ public class UserSelfUpdateForm {
         this.imageUrl = imageUrl;
     }
 
-    public Boolean getEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(Boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    public String getPassword() {
-        return password;
-    }
+  
 
 }

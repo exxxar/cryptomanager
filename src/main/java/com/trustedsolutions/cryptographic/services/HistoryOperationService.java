@@ -6,6 +6,7 @@
 package com.trustedsolutions.cryptographic.services;
 
 import com.core.cryptolib.enums.ObjectType;
+import com.trustedsolutions.cryptographic.forms.iHistoryOperationProjection;
 import com.trustedsolutions.cryptographic.model.HistoryOperation;
 
 import com.trustedsolutions.cryptographic.repository.HistoryOperationRepository;
@@ -87,7 +88,7 @@ public class HistoryOperationService {
         return historyOperationRepository.findAllByUserId(userId, pageable);
     }
 
-    public Page<JSONObject> getUserHistoryForUser(Long userId, Pageable pageable) {
+    public Page<iHistoryOperationProjection> getUserHistoryForUser(Long userId, Pageable pageable) {
         return historyOperationRepository.findAllByUserIdForUser(userId, pageable);
     }
 
