@@ -2,6 +2,7 @@ package com.trustedsolutions.cryptographic.model;
 
 import com.core.cryptolib.forms.TrustedDeviceForm;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.trustedsolutions.cryptographic.forms.iTrustedDeviceProjection;
 import com.trustedsolutions.cryptographic.services.SettingsService;
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -30,19 +31,19 @@ public class TrustedDevice implements Serializable {
     @Column(name = "device_public_id", unique = true)
     private String devicePublicId;
 
-    @Column(name = "device_reset_key")
+    @Column(name = "device_reset_key", nullable = true)
     private String deviceResetKey;
 
-    @Column(name = "device_factory_key")
+    @Column(name = "device_factory_key", nullable = true)
     private String deviceFactoryKey;
 
     @Column(name = "device_private_id", unique = true)
     private String devicePrivateId;
 
-    @Column(name = "device_actual_key")
+    @Column(name = "device_actual_key", nullable = true)
     private String deviceActualKey;
 
-    @Column(name = "device_old_key")
+    @Column(name = "device_old_key", nullable = true)
     private String deviceOldKey;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -85,7 +86,6 @@ public class TrustedDevice implements Serializable {
 //
 //        return this.currentFirmware.equals(actualFirmware);
 //    }
-
     public TrustedDevice(TrustedDeviceForm tdForm) {
         setTrustedDevice(tdForm);
     }
@@ -147,6 +147,15 @@ public class TrustedDevice implements Serializable {
     }
 
     public TrustedDevice() {
+        this.devicePublicId = null;
+        this.devicePrivateId = null;
+        this.setDeviceActualKey(null);
+        this.setDeviceOldKey(null);
+        this.setDeviceResetKey(null);
+        this.setDeviceFactoryKey(null);
+        this.description = "";
+        this.attempts = 0;
+        this.currentFirmware = "";
     }
 
     public Long getId() {

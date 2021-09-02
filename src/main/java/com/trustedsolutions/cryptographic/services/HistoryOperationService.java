@@ -6,6 +6,7 @@
 package com.trustedsolutions.cryptographic.services;
 
 import com.core.cryptolib.enums.ObjectType;
+import com.trustedsolutions.cryptographic.forms.iHistoryOperationProjection;
 import com.trustedsolutions.cryptographic.model.HistoryOperation;
 
 import com.trustedsolutions.cryptographic.repository.HistoryOperationRepository;
@@ -51,11 +52,11 @@ public class HistoryOperationService {
     }
 
     public void setBefore(JSONObject obj) {
-        this.before = obj;
+        this.before = obj == null ? new JSONObject() : obj;
     }
 
     public void setAfter(JSONObject obj) {
-        this.after = obj;
+        this.after = obj == null ? new JSONObject() : obj;
     }
 
     public void setType(ObjectType type) {
@@ -74,6 +75,55 @@ public class HistoryOperationService {
         this.setObjectId(objectId);
     }
 
+    public HistoryOperationService() {
+        this.setBefore(null);
+        this.setType(ObjectType.TRUSTED_DEVICE);
+        this.setDescription("");
+        this.setUserId(null);
+        this.setObjectId(null);
+
+    }
+
+    public Page<HistoryOperation> getUserHistory(Long userId, Pageable pageable) {
+        return historyOperationRepository.findAllByUserId(userId, pageable);
+    }
+
+    public Page<iHistoryOperationProjection> getUserHistoryForUser(Long userId, Pageable pageable) {
+        return historyOperationRepository.findAllByUserIdForUser(userId, pageable);
+    }
+
+    public Page<HistoryOperation> getObjectHistory(Long objectId, Pageable pageable) {
+        return historyOperationRepository.findAllByObjectId(objectId, pageable);
+    }
+
+    @Async
+    public void store() {
+
+        Runnable task = () -> {
+            try {
+                historyOperationRepository.save(new HistoryOperation(
+                        this.objectId,
+                        this.userId,
+                        this.type,
+                        this.description,
+                        this.before,
+                        this.after));
+
+                this.setBefore(null);
+                this.setType(ObjectType.TRUSTED_DEVICE);
+                this.setDescription("");
+                this.setUserId(null);
+                this.setObjectId(null);
+
+            } catch (Exception ex) {
+
+            }
+        };
+        Thread thread = new Thread(task);
+        thread.start();
+
+    }
+
     @Async
     public void store(JSONObject after) {
         this.setAfter(after);
@@ -88,11 +138,19 @@ public class HistoryOperationService {
                         this.before,
                         this.after));
 
+                this.setBefore(null);
+                this.setType(ObjectType.TRUSTED_DEVICE);
+                this.setDescription("");
+                this.setUserId(null);
+                this.setObjectId(null);
+
             } catch (Exception ex) {
 
             }
         };
+
         Thread thread = new Thread(task);
+
         thread.start();
 
     }

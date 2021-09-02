@@ -1,5 +1,6 @@
 package com.trustedsolutions.cryptographic.controller;
 
+import com.core.cryptolib.CryptoLoggerService;
 import com.trustedsolutions.cryptographic.exception.BadRequestException;
 import com.trustedsolutions.cryptographic.exception.ResourceNotFoundException;
 import com.trustedsolutions.cryptographic.exception.TokenRefreshException;
@@ -28,6 +29,8 @@ import com.trustedsolutions.cryptographic.security.UserPrincipal;
 import com.trustedsolutions.cryptographic.services.EmailService;
 import com.trustedsolutions.cryptographic.services.RefreshTokenService;
 import com.trustedsolutions.cryptographic.services.SettingsService;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -40,13 +43,23 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.validation.Valid;
 import java.net.URI;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.UUID;
+import javax.annotation.PostConstruct;
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.log4j.Logger;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Pageable;
@@ -61,6 +74,8 @@ public class AuthController {
 
     @Value("${app.client.url}")
     private String appClientUrl;
+
+    CryptoLoggerService logger;
 
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -91,6 +106,22 @@ public class AuthController {
 
     @Autowired
     private PasswordResetTokenRepository passwordTokenRepository;
+
+    @PostConstruct
+    public void initialize() {
+
+        try {
+            this.logger = new CryptoLoggerService(
+                    "UUKK",
+                    "AuthController",
+                    Logger.getLogger(AuthController.class)
+            );
+
+        } catch (Exception e) {
+
+        }
+
+    }
 
     @PostMapping("/simple-reset")
     public ResponseEntity<Object> simpleReset(@Valid @RequestBody ResetPasswordForm resetPasswordForm) {
@@ -217,7 +248,7 @@ public class AuthController {
         final PasswordResetToken myToken = new PasswordResetToken(token, user);
         passwordTokenRepository.save(myToken);
 
-        final String url = settingsService.get("appClientUrl", appClientUrl) + "/reset/change?token=" + token;
+        final String url = settingsService.get("appClientUrl", appClientUrl) + "/reset-password/" + token;
 
         emailService.sendSimpleMessage(user.getEmail(), "Reset password", url);
 
@@ -304,5 +335,18 @@ public class AuthController {
         passwordTokenRepository.delete(verificationToken);
 
         return true;
+    }
+
+    @RequestMapping(value = "/logs",
+            method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity<Object> testAll() {
+        
+        logger.info("TEST LOG INFO");
+        logger.error("TEST LOG ERROR");
+        logger.warn("TEST LOG WARN");
+        logger.fatal("TEST LOG fatal");
+
+        return new ResponseEntity<>(null, HttpStatus.OK);
     }
 }

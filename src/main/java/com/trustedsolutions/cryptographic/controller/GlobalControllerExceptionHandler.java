@@ -93,6 +93,7 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
     @Override
     public ResponseEntity<Object> handleHttpMessageNotWritable(HttpMessageNotWritableException ex, HttpHeaders headers, HttpStatus status, WebRequest request) {
 
+        System.out.println(ex);
         JSONObject message = this.errorPrepareFactory(status, "http.status.code.501", null);
 
         return new ResponseEntity<>(message, status);
@@ -100,6 +101,9 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
 
     @Override
     public ResponseEntity<Object> handleExceptionInternal(Exception ex, @Nullable Object body, HttpHeaders headers, HttpStatus status, WebRequest request) {
+         System.out.println(ex);
+
+        
         JSONObject message = this.errorPrepareFactory(status, "http.status.code.500", null);
 
         return new ResponseEntity<>(message, status);
@@ -116,6 +120,9 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
     @ExceptionHandler(RequestRejectedException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<Object> handleRequestRejectedException(final HttpServletRequest request, final RequestRejectedException ex) {
+         System.out.println(ex);
+
+        
         JSONObject message = this.errorPrepareFactory(HttpStatus.INTERNAL_SERVER_ERROR, "http.status.code.500", null);
 
         return new ResponseEntity<>(message, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -130,6 +137,9 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ResponseEntity<Object> handleException(final Exception ex) {
+         System.out.println(ex);
+
+        
         JSONObject message = this.errorPrepareFactory(HttpStatus.INTERNAL_SERVER_ERROR, "http.status.code.500", null);
 
         return new ResponseEntity<>(message, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -180,6 +190,9 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
     @ExceptionHandler({NoSuchMessageException.class, IllegalArgumentException.class, NullPointerException.class})
     public ResponseEntity<Object> systemExceptionHandling(Exception ex) {
 
+         System.out.println(ex);
+
+         
         Object responseBody = this.errorPrepareFactory(HttpStatus.INTERNAL_SERVER_ERROR, "http.status.code.500", null);
 
         return new ResponseEntity<>(responseBody, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -188,6 +201,8 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Object> handlerResposneException(ResponseStatusException ex) {
+
+        System.out.println(ex);
 
         Map<HttpStatus, String> map = new EnumMap<>(HttpStatus.class);
         map.put(HttpStatus.BAD_REQUEST, "http.status.code.400");
@@ -224,6 +239,6 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
         JSONObject message = this.errorPrepareFactory(HttpStatus.FORBIDDEN, "http.status.code.403", null);
 
         return new ResponseEntity<>(message, HttpStatus.FORBIDDEN);
-}
+    }
 
 }

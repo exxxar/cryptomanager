@@ -3,6 +3,12 @@ package com.trustedsolutions.cryptographic.controller;
 import com.core.cryptolib.CryptoLoggerService;
 import com.core.cryptolib.components.SettingObject;
 import com.core.cryptolib.components.Settings;
+import com.trustedsolutions.cryptographic.exception.ResourceNotFoundException;
+import com.trustedsolutions.cryptographic.model.Role;
+import com.trustedsolutions.cryptographic.model.User;
+import com.trustedsolutions.cryptographic.repository.UserRepository;
+import com.trustedsolutions.cryptographic.security.CurrentUser;
+import com.trustedsolutions.cryptographic.security.UserPrincipal;
 import com.trustedsolutions.cryptographic.services.EmailService;
 
 import com.trustedsolutions.cryptographic.services.HistoryOperationService;
@@ -81,6 +87,9 @@ public class SettingsController {
     PdfGenaratorUtil pdfGenaratorUtil;
 
     @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     public EmailService emailService;
 
     /*
@@ -130,7 +139,7 @@ public class SettingsController {
         return new ResponseEntity<>(array, HttpStatus.OK);
     }
 
-    @Secured("ROLE_ADMIN")
+    @Secured({"ROLE_ADMIN", "ROLE_USER"})
     @RequestMapping(value = "/settings/firmware",
             method = RequestMethod.GET,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
@@ -303,5 +312,61 @@ public class SettingsController {
         obj.put("name", path.getFileName().toString());
 
         return new ResponseEntity<>(obj, HttpStatus.OK);
+    }
+
+    @Secured({"ROLE_ADMIN","ROLE_USER"})
+    @RequestMapping(value = "/histories/owner",
+            method = RequestMethod.GET,
+            headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
+    @ResponseBody
+    public ResponseEntity<Object> historiesOwner(@CurrentUser UserPrincipal userPrincipal, Pageable pageable) {
+        User user = userRepository.findById(userPrincipal.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userPrincipal.getId()));
+
+        boolean isAdmin = false;
+
+        for (Role role : user.getRoles()) {
+            if (role.getName().equals("ROLE_ADMIN")) {
+                isAdmin = true;
+            }
+        }
+
+        return new ResponseEntity<>(isAdmin
+                ? historyOperationService.getUserHistory(userPrincipal.getId(), pageable)
+                : historyOperationService.getUserHistoryForUser(userPrincipal.getId(), pageable),
+                 HttpStatus.OK);
+    }
+
+    @Secured({"ROLE_ADMIN", "ROLE_USER"})
+    @RequestMapping(value = "/histories/user/{userId}",
+            method = RequestMethod.GET,
+            headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
+    @ResponseBody
+    public ResponseEntity<Object> historiesUser(@CurrentUser UserPrincipal userPrincipal, @PathVariable Long userId, Pageable pageable) {
+
+        User user = userRepository.findById(userPrincipal.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userPrincipal.getId()));
+
+        boolean isAdmin = false;
+
+        for (Role role : user.getRoles()) {
+            if (role.getName().equals("ROLE_ADMIN")) {
+                isAdmin = true;
+            }
+        }
+
+        return new ResponseEntity<>(isAdmin
+                ? historyOperationService.getUserHistory(userId, pageable)
+                : historyOperationService.getUserHistoryForUser(userId, pageable),
+                 HttpStatus.OK);
+    }
+
+    @Secured("ROLE_ADMIN")
+    @RequestMapping(value = "/histories/object/{objectId}",
+            method = RequestMethod.GET,
+            headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
+    @ResponseBody
+    public ResponseEntity<Object> historiesObject(@PathVariable Long objectId, Pageable pageable) {
+        return new ResponseEntity<>(historyOperationService.getObjectHistory(objectId, pageable), HttpStatus.OK);
     }
 }

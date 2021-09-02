@@ -36,6 +36,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.json.JSONException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 @Entity
 public class HistoryOperation implements Serializable {
@@ -45,13 +47,11 @@ public class HistoryOperation implements Serializable {
     @Column(name = "id", unique = true)
     private Long id;
 
-    @Column(nullable = true, name = "state_before")
-    @Convert(converter = HashMapConverter.class)
-    private Map<String, Object> stateBefore = new JSONObject();
+    @Column(nullable = true, name = "state_before", columnDefinition = "json")
+    private String stateBefore;
 
-    @Column(nullable = true, name = "state_after")
-    @Convert(converter = HashMapConverter.class)
-    private Map<String, Object> stateAfter = new JSONObject();
+    @Column(nullable = true, name = "state_after", columnDefinition = "json")
+    private String stateAfter;
 
     @Column(name = "object_id", nullable = true)
     private Long objectId;
@@ -95,18 +95,15 @@ public class HistoryOperation implements Serializable {
 //
 //        return company;
 //    }
-
     public HistoryOperation(Long objectId, Long userId, ObjectType objectType, String description, JSONObject before, JSONObject after) {
         this.objectId = objectId;
         this.userId = userId;
         this.objectType = objectType;
         this.description = description;
-        this.stateBefore = before;
-        this.stateAfter = after;
+        this.stateBefore = after.toJSONString();
+        this.stateAfter = after.toJSONString();
     }
-    
-    
-    
+
     public HistoryOperation() {
     }
 
@@ -118,20 +115,35 @@ public class HistoryOperation implements Serializable {
         this.id = id;
     }
 
-    public Map<String, Object> getStateBefore() {
-        return stateBefore;
+    public JSONObject getStateBefore() throws ParseException {
+
+        if (stateBefore == null) {
+            return null;
+        }
+
+        JSONParser parser = new JSONParser();
+        JSONObject tmp = (JSONObject) parser.parse(stateBefore);
+        return tmp;
+
     }
 
-    public void setStateBefore(Map<String, Object> stateBefore) {
-        this.stateBefore = stateBefore;
+    public void setStateBefore(JSONObject stateBefore) {
+        this.stateBefore = stateBefore.toJSONString();
     }
 
-    public Map<String, Object> getStateAfter() {
-        return stateAfter;
+    public JSONObject getStateAfter() throws ParseException {
+
+        if (stateAfter == null) {
+            return null;
+        }
+
+        JSONParser parser = new JSONParser();
+        JSONObject tmp = (JSONObject) parser.parse(stateAfter);
+        return tmp;
     }
 
-    public void setStateAfter(Map<String, Object> stateAfter) {
-        this.stateAfter = stateAfter;
+    public void setStateAfter(JSONObject stateAfter) {
+        this.stateAfter = stateAfter.toJSONString();
     }
 
     public Long getObjectId() {
@@ -150,8 +162,8 @@ public class HistoryOperation implements Serializable {
         this.userId = userId;
     }
 
-    public ObjectType getObjectType() {
-        return objectType;
+    public int getObjectType() {
+        return objectType.ordinal();
     }
 
     public void setObjectType(ObjectType objectType) {
@@ -173,4 +185,14 @@ public class HistoryOperation implements Serializable {
     public void setUpdateDateTime(LocalDateTime updateDateTime) {
         this.updateDateTime = updateDateTime;
     }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+    
+    
 }
