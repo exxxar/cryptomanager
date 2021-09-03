@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.trustedsolutions.cryptographic.forms;
+package com.trustedsolutions.cryptographic.projections;
 
 import com.core.cryptolib.enums.ObjectType;
 import java.time.LocalDateTime;

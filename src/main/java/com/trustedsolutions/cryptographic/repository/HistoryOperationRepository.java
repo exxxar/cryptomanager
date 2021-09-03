@@ -5,7 +5,7 @@
  */
 package com.trustedsolutions.cryptographic.repository;
 
-import com.trustedsolutions.cryptographic.forms.iHistoryOperationProjection;
+import com.trustedsolutions.cryptographic.projections.iHistoryOperationProjection;
 import com.trustedsolutions.cryptographic.model.HistoryOperation;
 import org.json.simple.JSONObject;
 import org.springframework.boot.autoconfigure.domain.EntityScan;

@@ -2,7 +2,7 @@ package com.trustedsolutions.cryptographic.model;
 
 import com.core.cryptolib.forms.TrustedDeviceForm;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.trustedsolutions.cryptographic.forms.iTrustedDeviceProjection;
+import com.trustedsolutions.cryptographic.projections.iTrustedDeviceProjection;
 import com.trustedsolutions.cryptographic.services.SettingsService;
 import java.io.Serializable;
 import java.time.LocalDate;

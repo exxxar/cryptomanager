@@ -1,9 +1,9 @@
 package com.trustedsolutions.cryptographic.controller;
 
 import com.trustedsolutions.cryptographic.exception.ResourceNotFoundException;
-import com.trustedsolutions.cryptographic.forms.CompanyForm;
-import com.trustedsolutions.cryptographic.forms.UserRoleForm;
-import com.trustedsolutions.cryptographic.forms.UserSelfUpdateForm;
+import com.core.cryptolib.forms.CompanyForm;
+import com.core.cryptolib.forms.UserRoleForm;
+import com.core.cryptolib.forms.UserSelfUpdateForm;
 import com.trustedsolutions.cryptographic.model.Company;
 import com.trustedsolutions.cryptographic.model.Role;
 import com.trustedsolutions.cryptographic.model.TrustedDevice;
