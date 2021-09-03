@@ -1,7 +1,7 @@
 package com.trustedsolutions.cryptographic.repository;
 
 
-import com.trustedsolutions.cryptographic.forms.iTrustedDeviceProjection;
+import com.trustedsolutions.cryptographic.projections.iTrustedDeviceProjection;
 import com.trustedsolutions.cryptographic.model.Company;
 import com.trustedsolutions.cryptographic.model.TrustedDevice;
 import java.util.List;

@@ -12,7 +12,7 @@ package com.trustedsolutions.cryptographic.model;
 import com.core.cryptolib.HashMapConverter;
 import com.core.cryptolib.enums.ObjectType;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.trustedsolutions.cryptographic.forms.CompanyForm;
+import com.core.cryptolib.forms.CompanyForm;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashSet;

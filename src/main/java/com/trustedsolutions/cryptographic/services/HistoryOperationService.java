@@ -6,7 +6,7 @@
 package com.trustedsolutions.cryptographic.services;
 
 import com.core.cryptolib.enums.ObjectType;
-import com.trustedsolutions.cryptographic.forms.iHistoryOperationProjection;
+import com.trustedsolutions.cryptographic.projections.iHistoryOperationProjection;
 import com.trustedsolutions.cryptographic.model.HistoryOperation;
 
 import com.trustedsolutions.cryptographic.repository.HistoryOperationRepository;
