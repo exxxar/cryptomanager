@@ -217,7 +217,7 @@ public class AuthController {
                 .map(refreshTokenService::verifyExpiration)
                 .map(RefreshToken::getUser)
                 .map(user -> {
-                    String token = tokenProvider.generateTokenFromUsername(user.getName());
+                    String token = tokenProvider.generateTokenFromUserId(user.getId());
                     return ResponseEntity.ok(new TokenRefreshResponse(token, requestRefreshToken));
                 })
                 .orElseThrow(() -> new TokenRefreshException(requestRefreshToken,
@@ -248,7 +248,7 @@ public class AuthController {
         final PasswordResetToken myToken = new PasswordResetToken(token, user);
         passwordTokenRepository.save(myToken);
 
-        final String url = settingsService.get("appClientUrl", appClientUrl) + "/reset-password/" + token;
+        final String url = settingsService.get("appClientUrl", appClientUrl).getValue() + "/reset-password/" + token;
 
         emailService.sendSimpleMessage(user.getEmail(), "Reset password", url);
 
@@ -307,7 +307,9 @@ public class AuthController {
                     "Bad old password!");
         }
 
-        user.setPassword(passwordDto.getNewPassword());
+        String password = passwordEncoder.encode(passwordDto.getNewPassword());
+
+        user.setPassword(password);
         userRepository.save(user);
 
         JSONObject obj = new JSONObject();
@@ -341,7 +343,7 @@ public class AuthController {
             method = RequestMethod.GET)
     @ResponseBody
     public ResponseEntity<Object> testAll() {
-        
+
         logger.info("TEST LOG INFO");
         logger.error("TEST LOG ERROR");
         logger.warn("TEST LOG WARN");

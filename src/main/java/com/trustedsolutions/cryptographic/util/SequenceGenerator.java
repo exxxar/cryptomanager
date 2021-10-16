@@ -1,4 +1,4 @@
-package com.trustedsolutions.cryptographic.controller;
+package com.trustedsolutions.cryptographic.util;
 
 
 import java.net.NetworkInterface;

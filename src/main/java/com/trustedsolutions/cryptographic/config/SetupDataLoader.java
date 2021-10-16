@@ -62,7 +62,9 @@ public class SetupDataLoader implements
         if (settingsService.getSettingsCount() == 0) {
             settingsService.put("actualFirmware", "");
             settingsService.put("previousFirmware", "");
+            settingsService.put("acceptFirmwareUpdate", "false");
             settingsService.put("pathFirmware", "");
+            settingsService.put("firmwareDirectory", "/var/log/tomcat9/");
             settingsService.put("pathPreviousFirmware", "");
             settingsService.put("adminEmail", "exxxar@gmail.com");
             settingsService.put("maxDeviceOldKeyLifetime", "864000000");

@@ -66,7 +66,17 @@ public class TokenProvider {
         return generateTokenFromUsername(userPrincipal.getUsername());
     }
 
+      public String generateTokenFromUserId(Long userId) {
+        
+        return Jwts.builder().setSubject(Long.toString(userId)).setIssuedAt(new Date())
+                .setExpiration(new Date((new Date()).getTime() + appProperties.getAuth()
+                        .getTokenExpirationMsec()))
+                .signWith(SignatureAlgorithm.HS512, appProperties.getAuth().getTokenSecret())
+                .compact();
+    }
+      
     public String generateTokenFromUsername(String username) {
+        
         return Jwts.builder().setSubject(username).setIssuedAt(new Date())
                 .setExpiration(new Date((new Date()).getTime() + appProperties.getAuth()
                         .getTokenExpirationMsec()))

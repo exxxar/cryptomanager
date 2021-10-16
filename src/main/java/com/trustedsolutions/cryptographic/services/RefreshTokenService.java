@@ -48,6 +48,8 @@ public class RefreshTokenService {
     }
 
     public RefreshToken createRefreshToken(Long userId) {
+        //this.deleteByUserId(userId);//может быть лишнее todo: remove if not work
+        
         RefreshToken refreshToken = new RefreshToken();
 
         refreshToken.setUser(userRepository.findById(userId).get());

@@ -9,30 +9,39 @@ package com.trustedsolutions.cryptographic.model;
  *
  * @author SAMS
  */
+import com.core.cryptolib.CryptoLoggerService;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.core.cryptolib.forms.CompanyForm;
+import com.trustedsolutions.cryptographic.controller.TrustedDeviceController;
+import com.trustedsolutions.cryptographic.listeners.CompanyListener;
+import com.trustedsolutions.cryptographic.services.HistoryOperationService;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EntityListeners;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.OneToOne;
+import javax.persistence.PrePersist;
+import javax.persistence.PreRemove;
+import javax.persistence.PreUpdate;
+import org.apache.log4j.Logger;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.json.JSONException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Entity
+@EntityListeners(CompanyListener.class)
 public class Company implements Serializable {
 
     @Id
@@ -55,7 +64,7 @@ public class Company implements Serializable {
     @Column(name = "active")
     private boolean active = true;
 
-    @ManyToMany(cascade = CascadeType.ALL)
+    @ManyToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH, CascadeType.REMOVE})
     @JoinTable
     private Set<TrustedDevice> trustedDevices;
 
@@ -124,9 +133,9 @@ public class Company implements Serializable {
         this.userCheckUrl = userCheckUrl;
         this.createDateTime = createDateTime;
         this.updateDateTime = updateDateTime;
-        
-         this.active = true;
-        
+
+        this.active = true;
+
     }
 
     public Long getId() {
@@ -227,7 +236,36 @@ public class Company implements Serializable {
         this.callbackUrl = callbackUrl;
     }
 
+//    @PreRemove
+//    private void preRemove() {
+//        setTrustedDevices(null);
+//    }
 
+//    @PrePersist
+//   
+//    private void prePersistFunction(  ) {
+//        CryptoLoggerService logger = new CryptoLoggerService(
+//                "UUKK",
+//                "Company model",
+//                Logger.getLogger(Company.class)
+//        );
+//        
+//        logger.info("Store company",this.toJSON().toJSONString());
+//        
+//       
+//
+//    }
+//
+//    @PreUpdate
+//    public void preUpdateFunction() {
+//        System.out.println("test update");
+//         CryptoLoggerService logger = new CryptoLoggerService(
+//                "UUKK",
+//                "Company model",
+//                Logger.getLogger(Company.class)
+//        );
+//        
+//        logger.info("Update company",this.toJSON().toJSONString());
+//    }
 
-    
 }

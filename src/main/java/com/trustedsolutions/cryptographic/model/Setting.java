@@ -1,6 +1,9 @@
 package com.trustedsolutions.cryptographic.model;
 
+import com.core.cryptolib.enums.TypeEnum;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.trustedsolutions.cryptographic.listeners.MultiConnectionListener;
+import com.trustedsolutions.cryptographic.listeners.SettingsListener;
 import java.io.Serializable;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -11,10 +14,16 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import java.time.LocalDateTime;
 import javax.persistence.Column;
+import javax.persistence.EntityListeners;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Table;
+import org.json.JSONException;
+import org.json.simple.JSONObject;
 
 @Entity
 @Table(name = "Settings")
+@EntityListeners(SettingsListener.class)
 public class Setting implements Serializable {
 
     @Id
@@ -27,6 +36,10 @@ public class Setting implements Serializable {
 
     @Column(length = 512, columnDefinition = "varchar(255) default ''")
     private String settingValue;
+
+    @Column(name = "type")
+    @Enumerated(EnumType.STRING)
+    private TypeEnum type;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @CreationTimestamp
@@ -85,4 +98,23 @@ public class Setting implements Serializable {
         this.updateDateTime = updateDateTime;
     }
 
+    public TypeEnum getType() {
+        return type;
+    }
+
+    public void setType(TypeEnum type) {
+        this.type = type;
+    }
+
+    public JSONObject toJSON() throws JSONException {
+        JSONObject settings = new JSONObject();
+        settings.put("id", id);
+        settings.put("settingKey", settingKey);
+        settings.put("settingValue", settingValue);
+        settings.put("type", type);
+        settings.put("createDateTime", createDateTime);
+        settings.put("updateDateTime", updateDateTime);
+
+        return settings;
+    }
 }

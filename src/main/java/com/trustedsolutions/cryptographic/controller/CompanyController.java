@@ -48,6 +48,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -58,7 +59,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-public class CompaniesController {
+public class CompanyController {
 
     @Autowired
     MessageSource messageSource;
@@ -324,6 +325,7 @@ public class CompaniesController {
             method = RequestMethod.DELETE,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
     @ResponseBody
+    @Transactional
     public ResponseEntity<Object> remove(@PathVariable Long companyId) {
 
         Company company = companyRepository.findCompanyById(companyId);
@@ -335,7 +337,7 @@ public class CompaniesController {
             );
         }
 
-        companyRepository.delete(company);
+        companyRepository.deleteById(company.getId());
 
         return new ResponseEntity<>(company, HttpStatus.OK);
     }

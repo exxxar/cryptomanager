@@ -93,7 +93,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     public void configure(WebSecurity webSecurity) throws Exception {
         webSecurity.ignoring()
-                .antMatchers("/trusted_devices/reencrypt","/logs");
+                .antMatchers("/trusted_devices/reencrypt","/logs","/users/avatar/**");
     }
 
     @Override
