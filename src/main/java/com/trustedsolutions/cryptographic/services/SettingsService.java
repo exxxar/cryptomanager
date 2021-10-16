@@ -63,6 +63,7 @@ public class SettingsService {
         stList.forEach(item -> {
             settings.getSettings().stream().filter(sub -> (item.getKey().equals(sub.getKey()))).map(sub -> {
                 item.setValue(sub.getValue());
+                item.setType(sub.getType());
                 return sub;
             }).forEachOrdered(_item -> {
                 settingRepository.save(item);
@@ -81,7 +82,8 @@ public class SettingsService {
             stList.forEach(item -> {
                 settings.put(new SettingObject(
                         item.getKey(),
-                        item.getValue()
+                        item.getValue(),
+                        item.getType()
                 ));
             });
 

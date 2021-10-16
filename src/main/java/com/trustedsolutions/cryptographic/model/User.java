@@ -6,6 +6,8 @@ import java.util.Collection;
 import javax.persistence.*;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotNull;
+import org.json.JSONException;
+import org.json.simple.JSONObject;
 
 @Entity
 @Table(name = "users", uniqueConstraints = {
@@ -149,5 +151,18 @@ public class User {
         this.company = company;
     }
 
+        public JSONObject toJSON() throws JSONException {
+        JSONObject user = new JSONObject();
+        user .put("id", id);
+        user .put("name", name);
+        user .put("email", email);
+        user .put("imageUrl", imageUrl);
+        user .put("emailVerified", emailVerified);
+        user .put("enabled", enabled);
+        user .put("provider", provider);
+        user .put("providerId", providerId);
+
+        return user ;
+    }
     
 }

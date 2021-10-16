@@ -9,32 +9,17 @@ package com.trustedsolutions.cryptographic.model;
  *
  * @author SAMS
  */
-import com.core.cryptolib.HashMapConverter;
 import com.core.cryptolib.enums.ObjectType;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.core.cryptolib.forms.CompanyForm;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
-import javax.persistence.Convert;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
-import javax.persistence.OneToOne;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.json.JSONException;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -47,10 +32,11 @@ public class HistoryOperation implements Serializable {
     @Column(name = "id", unique = true)
     private Long id;
 
-    @Column(nullable = true, name = "state_before", columnDefinition = "json")
+    @Column(nullable = true, name = "state_before", columnDefinition = "json", length = 10000)
     private String stateBefore;
 
-    @Column(nullable = true, name = "state_after", columnDefinition = "json")
+    
+    @Column(nullable = true, name = "state_after", columnDefinition = "json", length = 10000)
     private String stateAfter;
 
     @Column(name = "object_id", nullable = true)
@@ -100,7 +86,7 @@ public class HistoryOperation implements Serializable {
         this.userId = userId;
         this.objectType = objectType;
         this.description = description;
-        this.stateBefore = after.toJSONString();
+        this.stateBefore = before.toJSONString();
         this.stateAfter = after.toJSONString();
     }
 
@@ -118,7 +104,7 @@ public class HistoryOperation implements Serializable {
     public JSONObject getStateBefore() throws ParseException {
 
         if (stateBefore == null) {
-            return null;
+            return new JSONObject();
         }
 
         JSONParser parser = new JSONParser();
@@ -134,7 +120,7 @@ public class HistoryOperation implements Serializable {
     public JSONObject getStateAfter() throws ParseException {
 
         if (stateAfter == null) {
-            return null;
+            return new JSONObject();
         }
 
         JSONParser parser = new JSONParser();

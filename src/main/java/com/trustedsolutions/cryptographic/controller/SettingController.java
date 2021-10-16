@@ -3,6 +3,7 @@ package com.trustedsolutions.cryptographic.controller;
 import com.core.cryptolib.CryptoLoggerService;
 import com.core.cryptolib.components.SettingObject;
 import com.core.cryptolib.components.Settings;
+import com.core.cryptolib.forms.SendMailForm;
 import com.trustedsolutions.cryptographic.exception.ResourceNotFoundException;
 import com.trustedsolutions.cryptographic.model.Role;
 import com.trustedsolutions.cryptographic.model.User;
@@ -64,7 +65,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.annotation.Secured;
 
 @RestController
-public class SettingsController {
+public class SettingController {
 
     @Autowired
     MessageSource messageSource;
@@ -110,7 +111,7 @@ public class SettingsController {
             this.logger = new CryptoLoggerService(
                     appTitle,
                     "SettingsController",
-                    Logger.getLogger(SettingsController.class)
+                    Logger.getLogger(SettingController.class)
             );
 
         } catch (Exception e) {
@@ -131,6 +132,7 @@ public class SettingsController {
         settingsService.getAllSettings().getSettings().stream().map(object -> {
             JSONObject tmp = new JSONObject();
             tmp.put(object.getKey(), object.getValue());
+            tmp.put("type", object.getType());
             return tmp;
         }).forEachOrdered(tmp -> {
             array.add(tmp);
@@ -139,7 +141,7 @@ public class SettingsController {
         return new ResponseEntity<>(array, HttpStatus.OK);
     }
 
-    @Secured({"ROLE_ADMIN", "ROLE_USER"})
+    @Secured({"ROLE_ADMIN", "ROLE_USER","ROLE_SECURE"})
     @RequestMapping(value = "/settings/firmware",
             method = RequestMethod.GET,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
@@ -162,6 +164,7 @@ public class SettingsController {
         Settings tmpSettings = new Settings();
 
         settings.forEach(obj -> {
+           
             tmpSettings.put(obj);
         });
 
@@ -170,12 +173,13 @@ public class SettingsController {
         return new ResponseEntity<>(settingsService.getAllSettings(), HttpStatus.OK);
     }
 
-    @Secured("ROLE_ADMIN")
+    @Secured({"ROLE_ADMIN","ROLE_SECURE"})
     @RequestMapping(value = "/settings/firmware/upload",
             method = RequestMethod.POST,
             headers = {"X-API-VERSION=0.0.3"})
     @ResponseBody
-    public ResponseEntity<Object> uploadFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Object> uploadFile(@RequestParam("file") MultipartFile file, @RequestParam("version") String version) {
+
         String fileName = fileStorageService.storeFile(file);
 
         String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
@@ -189,8 +193,8 @@ public class SettingsController {
             settingsService.put("pathPreviousFirmware", settingsService.get("pathFirmware").getValue());
         }
 
-        settingsService.put("actualFirmware", fileName);
-        settingsService.put("pathFirmware", "/var/log/uukk/" + fileName);
+        settingsService.put("actualFirmware", version);
+        settingsService.put("pathFirmware", settingsService.get("firmwareDirectory").getValue() + fileName);
 
         JSONObject obj = new JSONObject();
         obj.put("fileName", fileName);
@@ -199,22 +203,23 @@ public class SettingsController {
         obj.put("size", file.getSize());
 
         return new ResponseEntity<>(obj, HttpStatus.OK);
+
     }
 
-    @Secured("ROLE_ADMIN")
-    @RequestMapping(value = "/settings/firmware/uploadMultiple",
-            method = RequestMethod.POST,
-            headers = {"X-API-VERSION=0.0.3"})
-    @ResponseBody
-    public ResponseEntity<Object> uploadMultipleFiles(@RequestParam("files") MultipartFile[] files) {
-
-        return new ResponseEntity<>(Arrays.asList(files)
-                .stream()
-                .map(file -> uploadFile(file))
-                .collect(Collectors.toList()), HttpStatus.OK);
-    }
-
-    @Secured("ROLE_ADMIN")
+//    @Secured("ROLE_ADMIN")
+//    @RequestMapping(value = "/settings/firmware/uploadMultiple",
+//            method = RequestMethod.POST,
+//            headers = {"X-API-VERSION=0.0.3"})
+//    @ResponseBody
+//    public ResponseEntity<Object> uploadMultipleFiles(@RequestParam("files") MultipartFile[] files, @RequestParam("version") String version) {
+//
+//        return new ResponseEntity<>(Arrays.asList(files)
+//                .stream()
+//                .map(file -> uploadFile(file))
+//                .collect(Collectors.toList()), HttpStatus.OK);
+//
+//    }
+    @Secured({"ROLE_ADMIN","ROLE_SECURE"})
     @RequestMapping(value = "/settings/firmware/download/{fileName:.+}",
             method = RequestMethod.GET,
             headers = {"X-API-VERSION=0.0.3"})
@@ -286,7 +291,9 @@ public class SettingsController {
     }
 
     @Secured("ROLE_ADMIN")
-    @GetMapping(value = "/histories/pdf")
+    @RequestMapping(value = "/histories/pdf",
+            method = RequestMethod.GET,
+            headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
     public ResponseEntity<Object> pdf() throws Exception {
         Map<String, String> data = new HashMap<String, String>();
         data.put("name", "James");
@@ -314,7 +321,35 @@ public class SettingsController {
         return new ResponseEntity<>(obj, HttpStatus.OK);
     }
 
-    @Secured({"ROLE_ADMIN","ROLE_USER"})
+    @Secured("ROLE_ADMIN")
+    @RequestMapping(value = "/histories/pdf",
+            method = RequestMethod.POST,
+            headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
+    public ResponseEntity<Object> pdfEmail(@RequestBody SendMailForm emailForm) throws Exception {
+        Map<String, String> data = new HashMap<String, String>();
+        data.put("name", "James");
+        Path path = pdfGenaratorUtil.createPdf("pdf", data);
+
+        emailService.sendMessageWithAttachment(
+                emailForm.getEmail(),
+                messageSource.getMessage("mail.admin.pdf.title",
+                        null,
+                        LocaleContextHolder.getLocale()),
+                messageSource.getMessage("mail.admin.pdf.message",
+                        null,
+                        LocaleContextHolder.getLocale()),
+                path.toAbsolutePath().toString()
+        );
+
+        //Files.delete(path.toAbsolutePath());
+        JSONObject obj = new JSONObject();
+        obj.put("path", path.toAbsolutePath().toString());
+        obj.put("name", path.getFileName().toString());
+
+        return new ResponseEntity<>(obj, HttpStatus.OK);
+    }
+
+    @Secured({"ROLE_ADMIN", "ROLE_USER"})
     @RequestMapping(value = "/histories/owner",
             method = RequestMethod.GET,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
@@ -334,7 +369,7 @@ public class SettingsController {
         return new ResponseEntity<>(isAdmin
                 ? historyOperationService.getUserHistory(userPrincipal.getId(), pageable)
                 : historyOperationService.getUserHistoryForUser(userPrincipal.getId(), pageable),
-                 HttpStatus.OK);
+                HttpStatus.OK);
     }
 
     @Secured({"ROLE_ADMIN", "ROLE_USER"})
@@ -358,7 +393,7 @@ public class SettingsController {
         return new ResponseEntity<>(isAdmin
                 ? historyOperationService.getUserHistory(userId, pageable)
                 : historyOperationService.getUserHistoryForUser(userId, pageable),
-                 HttpStatus.OK);
+                HttpStatus.OK);
     }
 
     @Secured("ROLE_ADMIN")

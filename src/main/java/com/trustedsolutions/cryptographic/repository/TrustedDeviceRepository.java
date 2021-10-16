@@ -41,7 +41,10 @@ public interface TrustedDeviceRepository extends PagingAndSortingRepository<Trus
     @Query(value = "SELECT * FROM `trusted_device` LEFT JOIN `company_trusted_devices` ON (`company_trusted_devices`.`trusted_devices_id` = `trusted_device`.`id`) WHERE `company_trusted_devices`.`companies_id`=:companyId", nativeQuery = true)
     Page<TrustedDevice> findAllDevicesByCompanyId(@Param("companyId") Long companyId, Pageable pageable);
 
-    @Query(value = "SELECT `id`,`active`,`attempts`,`current_firmware`,`description`,`last_update_actual_key_date_time`,`device_public_id`,`create_date_time`  FROM `trusted_device` INNER JOIN `company_trusted_devices` ON (`company_trusted_devices`.`trusted_devices_id` = `trusted_device`.`id`) WHERE `company_trusted_devices`.`companies_id`=:companyId", nativeQuery = true)
+    @Query(value = "SELECT `id`,`active`,`attempts`,`current_firmware`,`description`,`last_update_actual_key_date_time`,`device_public_id`,`create_date_time`  FROM `trusted_device` INNER JOIN `company_trusted_devices` ON (`company_trusted_devices`.`trusted_devices_id` = `trusted_device`.`id`) WHERE `company_trusted_devices`.`companies_id`=:companyId" , nativeQuery = true)
     Page<iTrustedDeviceProjection> findAllDevicesByCompanyIdForUser(@Param("companyId") Long companyId, Pageable pageable);
 
+    @Query(value="SELECT count(*) >= 0 FROM `trusted_device` INNER JOIN `company_trusted_devices` ON (`company_trusted_devices`.`trusted_devices_id` = `trusted_device`.`id`) WHERE `company_trusted_devices`.`companies_id`=:companyId AND `trusted_device`.`id`=:deviceId", nativeQuery = true)
+    boolean userHasDeviceByCompanyAndDeviceIds(@Param("companyId") Long companyId, @Param("deviceId") Long deviceId);
+ 
 }

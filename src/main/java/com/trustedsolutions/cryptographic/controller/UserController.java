@@ -199,6 +199,51 @@ public class UserController {
         return new ResponseEntity<>(userRepository.findAll(pageable), HttpStatus.OK);
     }
 
+   
+    @RequestMapping(value = "/users/avatar/{userId:[0-9]{1,100}}",
+            method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity<Object> getCurrentUserAvatar(@PathVariable Long userId, HttpServletRequest request) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        if (user.getImageUrl() == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    messageSource.getMessage("http.status.code.404",
+                            null, LocaleContextHolder.getLocale())
+            );
+        }
+
+        Resource resource = fileStorageService.loadFileAsResource(user.getImageUrl());
+
+        if (resource == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    messageSource.getMessage("http.status.code.404",
+                            null, LocaleContextHolder.getLocale())
+            );
+        }
+
+        // Try to determine file's content type
+        String contentType = null;
+        try {
+            contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
+        } catch (IOException ex) {
+
+        }
+
+        // Fallback to the default content type if type could not be determined
+        if (contentType == null) {
+            contentType = "application/octet-stream";
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
+
+    }
+
     @Secured("ROLE_ADMIN")
     @RequestMapping(value = "/users/{userId:[0-9]{1,100}}",
             method = RequestMethod.GET,

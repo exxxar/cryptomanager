@@ -15,9 +15,13 @@ import com.core.cryptolib.forms.ResponseTDPublicIdForm;
 import com.core.cryptolib.forms.TransferDataForm;
 import com.core.cryptolib.forms.TransferDataFormWithDevicesInfo;
 import com.core.cryptolib.forms.TrustedDeviceForm;
+import com.trustedsolutions.cryptographic.exception.ResourceNotFoundException;
+import com.trustedsolutions.cryptographic.model.Role;
 
 import com.trustedsolutions.cryptographic.model.TrustedDevice;
+import com.trustedsolutions.cryptographic.model.User;
 import com.trustedsolutions.cryptographic.repository.TrustedDeviceRepository;
+import com.trustedsolutions.cryptographic.repository.UserRepository;
 import com.trustedsolutions.cryptographic.security.CurrentUser;
 import com.trustedsolutions.cryptographic.security.UserPrincipal;
 import com.trustedsolutions.cryptographic.services.HistoryOperationService;
@@ -30,7 +34,9 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import javax.annotation.PostConstruct;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -54,6 +60,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.apache.log4j.Logger;
+import org.json.simple.JSONArray;
 import org.springframework.data.domain.Pageable;
 import org.springframework.validation.BindingResult;
 
@@ -79,27 +86,27 @@ public class TrustedDeviceController {
 
     EncryptService desApp;
 
-    @Value("${app.title}")
-    private String appTitle;
-
     @Value("${cryptographic.attempts}")
     private int maxAttempts;
 
     CryptoLoggerService logger;
 
-    @Autowired
-    HistoryOperationService historyOperationService;
+   
 
     @Autowired
     SettingsService settingsService;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @PostConstruct
     public void initialize() {
         this.logger = new CryptoLoggerService(
-                appTitle,
+                "UUKK",
                 "TrustedDeviceController",
                 Logger.getLogger(TrustedDeviceController.class)
         );
+        this.logger.setDebugMode(true);
         this.desApp = new EncryptService();
     }
 
@@ -131,18 +138,78 @@ public class TrustedDeviceController {
 //
 //        return new ResponseEntity<>(message, HttpStatus.OK);
 //    }
-    @Secured("ROLE_ADMIN")
+    @Secured({"ROLE_USER"})
+    @RequestMapping(value = "/trusted_devices/activate/{deviceId:[0-9]{1,100}}",
+            method = RequestMethod.GET,
+            headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
+    @ResponseBody
+    public ResponseEntity<Object> activate(@CurrentUser UserPrincipal userPrincipal, @PathVariable("deviceId") Long deviceId) throws UnsupportedEncodingException {
+
+        User user = userRepository.findByEmail(userPrincipal.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                "Email not found!")
+                );
+
+        if (!tdRepository.userHasDeviceByCompanyAndDeviceIds(deviceId, user.getCompany().getId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Email not found!");
+        }
+
+        TrustedDevice td = tdRepository.findTrustedDeviceById(deviceId);
+        td.setActive(!td.isActive());
+
+        tdRepository.save(td);
+
+        JSONObject message = new JSONObject();
+        message.put("is_active", td.isActive());
+
+        return new ResponseEntity<>(message, HttpStatus.OK);
+    }
+
+     @Secured({"ROLE_SECURE"})
+    @RequestMapping(value = "/trusted_devices/enable/{deviceId:[a-zA-Z0-9-_]{2,512}}",
+            method = RequestMethod.GET,
+            headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
+    @ResponseBody
+    public ResponseEntity<Object> enableDevice(@CurrentUser UserPrincipal userPrincipal, @PathVariable("deviceId") String devicePublicId) throws UnsupportedEncodingException {
+
+        TrustedDevice td =tdRepository.findTrustedDeviceByDevicePublicId(devicePublicId);
+        td.setActive(!td.isActive());
+
+        tdRepository.save(td);
+
+        JSONObject message = new JSONObject();
+        message.put("is_active", td.isActive());
+
+        return new ResponseEntity<>(message, HttpStatus.OK);
+    }
+
+      @Secured({"ROLE_ADMIN","ROLE_SECURE"})
+    @RequestMapping(value = "/trusted_devices/all-public-ids",
+            method = RequestMethod.GET,
+            headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
+    @ResponseBody
+    public ResponseEntity<Object> allDevices() {
+
+        JSONArray list = new JSONArray();
+        
+        List<TrustedDevice> tdList = (List<TrustedDevice>)tdRepository.findAll();
+        
+        for(TrustedDevice td:tdList)
+            list.add(td.getDevicePublicId());
+
+        return new ResponseEntity<>(list, HttpStatus.OK);
+
+    }
+    
+    @Secured({"ROLE_ADMIN","ROLE_SECURE"})
     @RequestMapping(value = "/trusted_devices/free",
             method = RequestMethod.GET,
             headers = {"X-API-VERSION=0.0.3", "content-type=application/json"})
     @ResponseBody
     public ResponseEntity<Object> freeDevices(@CurrentUser UserPrincipal userPrincipal, Pageable pageable) {
 
-        historyOperationService.setUserId(userPrincipal.getId());
-        historyOperationService.setDescription("Get free devices");
-        historyOperationService.setType(ObjectType.TRUSTED_DEVICE);
-        historyOperationService.store();
-
+      
         return new ResponseEntity<>(tdRepository.findAllFreeDevices(pageable), HttpStatus.OK);
 
     }
@@ -180,10 +247,7 @@ public class TrustedDeviceController {
 
         TrustedDevice td = tdRepository.findTrustedDeviceById(tdId);
 
-        historyOperationService.setBefore(td.toJSON());
-        historyOperationService.setUserId(userPrincipal.getId());
-        historyOperationService.setDescription("Remove trusted device");
-        historyOperationService.setType(ObjectType.TRUSTED_DEVICE);
+       
 
         if (td == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -194,7 +258,7 @@ public class TrustedDeviceController {
 
         tdRepository.delete(td);
 
-        historyOperationService.store();
+       
 
         return new ResponseEntity<>(td, HttpStatus.OK);
     }
@@ -213,10 +277,6 @@ public class TrustedDeviceController {
             );
         }
 
-        historyOperationService.setUserId(userPrincipal.getId());
-        historyOperationService.setDescription("Add trusted device");
-        historyOperationService.setType(ObjectType.TRUSTED_DEVICE);
-
         if (tdRepository.findTrustedDeviceByDevicePublicId(trustedDevice.getDevicePublicId()) != null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     messageSource.getMessage("http.status.code.400",
@@ -233,12 +293,9 @@ public class TrustedDeviceController {
             );
         }
 
-        TrustedDevice tdAdded = (TrustedDevice) tdRepository.save(td);
+        td = tdRepository.save(td);
 
-        historyOperationService.setObjectId(tdAdded.getId());
-        historyOperationService.store(tdAdded.toJSON());
-
-        return new ResponseEntity<>(tdAdded, HttpStatus.OK);
+        return new ResponseEntity<>(td, HttpStatus.OK);
     }
 
     @Secured("ROLE_ADMIN")
@@ -264,17 +321,9 @@ public class TrustedDeviceController {
             );
         }
 
-        historyOperationService.setBefore(td.toJSON());
-        historyOperationService.setUserId(userPrincipal.getId());
-        historyOperationService.setDescription("Update trusted device");
-        historyOperationService.setType(ObjectType.TRUSTED_DEVICE);
-
         td.setTrustedDevice(trustedDevice);
 
         td = tdRepository.save(td);
-
-        historyOperationService.setObjectId(td.getId());
-        historyOperationService.store(td.toJSON());
 
         return new ResponseEntity<>(td, HttpStatus.OK);
     }
@@ -292,8 +341,10 @@ public class TrustedDeviceController {
                 )
         );
 
-        td.setDeviceActualKeyEncode(td.getDeviceResetKey());
-        td.setDeviceOldKeyEncode(td.getDeviceResetKey());
+        // td.setDeviceActualKeyEncode(td.getDeviceResetKey());
+        //td.setDeviceOldKeyEncode(td.getDeviceResetKey());
+        td.setAcceptAutoReset(!td.isAcceptAutoReset());
+        td.setResetTry(false);
         tdRepository.save(td);
 
         return new ResponseEntity<>(td.toJSON(), HttpStatus.OK);
@@ -327,7 +378,9 @@ public class TrustedDeviceController {
 
         byte[] decrypted_data = Base64.getDecoder().decode(infoRequestForm.getData().getBytes());
 
-        UserPayloadServiceForCrypt ups = new UserPayloadServiceForCrypt(settingsService.getAllSettings());
+        UserPayloadServiceForCrypt ups = new UserPayloadServiceForCrypt(
+                settingsService.getAllSettings(),
+                logger);
 
         JSONObject tmp = null;
         try {
@@ -360,7 +413,7 @@ public class TrustedDeviceController {
         try {
 
             ResponseTDPublicIdForm resp = ups.twiceEncryptedPermissionBegin(tdf);
-
+            this.logger.info("st 1");
             if (resp == null) {
                 tdf = ups.denailRequest();
 
@@ -368,11 +421,13 @@ public class TrustedDeviceController {
 
                 tdRecipient = tdRepository.findTrustedDeviceByDevicePublicId(
                         resp.getTdRecipientTrustedDevicePublicId());
-
+                this.logger.info("st 2");
                 tdSender = tdRepository.findTrustedDeviceByDevicePublicId(
                         resp.getTdSenderTrustedDevicePublicId());
-
+                this.logger.info("st 3");
                 if (tdSender == null || tdRecipient == null) {
+
+                    this.logger.info("st 4");
                     infoRequestForm.setData(ups.denailRequest().toBase64SimpleJSON());
                     return new ResponseEntity<>(infoRequestForm.toJSON(),
                             HttpStatus.OK);
@@ -385,7 +440,7 @@ public class TrustedDeviceController {
                 byte[] recipientDeviceResetKey = EncryptService.getSecureRandom(8);
 
                 byte[] senderDeviceResetKey = EncryptService.getSecureRandom(8);
-
+                this.logger.info("st 5");
                 tdfWdi = ups.twiceEncryptedPermissionEnd(
                         tdRecipient.toTrustedDeviceForm(),
                         tdSender.toTrustedDeviceForm(),
@@ -395,17 +450,21 @@ public class TrustedDeviceController {
                         senderDeviceResetKey,
                         maxAttempts
                 );
-
+                this.logger.info("st 6");
                 tdf = tdfWdi.getTdf();
 
                 tdRecipient.setAttempts(tdfWdi.getRecipient().getAttempts());
                 tdRecipient.setCurrentFirmware(tdfWdi.getRecipient().getCurrentFirmware());
+                tdRecipient.setResetTry(tdfWdi.getRecipient().isResetTry());
+                tdRecipient.setDeviceResetKey(tdfWdi.getRecipient().getDeviceResetKey());
                 tdRepository.save(tdRecipient);
-
+                this.logger.info("st 7");
                 tdSender.setAttempts(tdfWdi.getSender().getAttempts());
                 tdSender.setCurrentFirmware(tdfWdi.getSender().getCurrentFirmware());
+                tdSender.setResetTry(tdfWdi.getSender().isResetTry());
+                tdSender.setDeviceResetKey(tdfWdi.getSender().getDeviceResetKey());
                 tdRepository.save(tdSender);
-
+                this.logger.info("st 8");
                 if (tdf.getType() == InfoRequestType.denial.getValue()) {
 
                     logger.info(String.format("*Current type*=%d *needed type*=%d\n*Data*:\n%s",
@@ -432,7 +491,7 @@ public class TrustedDeviceController {
                 tdRecipient.setLastUpdateActualKeyDateTime(LocalDateTime.now());
                 tdRecipient.setAttempts(0);
                 tdRepository.save(tdRecipient);
-
+                this.logger.info("st 9");
                 tdSender.setDeviceActualKeyEncode(senderDeviceNewKey);
                 tdSender.setDeviceOldKeyEncode(tmp_sender_actual_key);
                 tdSender.setDeviceResetKeyEncode(tmp_sender_reset_key);
